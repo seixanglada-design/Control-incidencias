@@ -453,6 +453,13 @@
     border-radius: 4px; line-height: 1; flex-shrink: 0; margin-left: auto;
   }
   .unidad-edit-btn:hover { color: var(--indigo); background: var(--indigo-bg); }
+  .inc-delete-btn {
+    position: absolute; top: 12px; right: 12px;
+    background: var(--red-bg); border: 1px solid #fecaca; color: var(--red);
+    cursor: pointer; padding: 4px 7px; border-radius: 6px; font-size: 12px;
+    opacity: .72; transition: opacity .15s, background .15s;
+  }
+  .inc-delete-btn:hover { opacity: 1; background: #fecaca; }
   .unidad-edit-form {
     display: none; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;
   }
@@ -1874,6 +1881,27 @@
     return uploaded;
   }
 
+  async function uploadSeguimientoFiles(card, files, segId) {
+    const id = card?.dataset?.id;
+    const inc = incidenciasCloud.find(item => item.id === id);
+    if (!files.length || !graphAccount || !inc) return [];
+    const unitFolder = safePathSegment(inc.unidad);
+    const folder = `${fotosBasePath}/${unitFolder}/${inc.id}/Seguimiento/${segId}`;
+    await ensureFolder(folder);
+    const uploaded = [];
+    for (const [index, file] of files.entries()) {
+      const name = `${String(index + 1).padStart(2, '0')}-${safePathSegment(file.name)}`;
+      const path = `${folder}/${name}`;
+      await graphFetch(`${graphPath(path)}:/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      uploaded.push(path);
+    }
+    return uploaded;
+  }
+
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
   }
@@ -1882,23 +1910,120 @@
     return escapeHtml(value).replace(/`/g, '&#96;');
   }
 
+  function renderSeguimientoItem(seg) {
+    const cfg = segConfigByLabel[seg.label] || { cls:'tl-nota2', emoji:'📝' };
+    const fecha = seg.fecha ? new Date(seg.fecha).toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }) : '';
+    const adjuntos = seg.adjuntos || [];
+    const fotosThumbs = adjuntos.map((path, i) =>
+      `<div class="tl-foto-thumb" title="${escapeAttr(path)}" onclick="event.stopPropagation(); abrirLightbox('📎')">📎<small>${i + 1}</small></div>`
+    ).join('');
+    return `
+      <div class="tl-item ${cfg.cls}" data-seg-id="${escapeAttr(seg.id || '')}">
+        <div class="tl-dot-wrap"><div class="tl-dot">${cfg.emoji}</div></div>
+        <div class="tl-body">
+          <div class="tl-meta-row">
+            <span class="tl-label">${escapeHtml(seg.label || 'Nota')}</span>
+            <span class="tl-date-lbl">${fecha}</span>
+            <span class="tl-item-actions">
+              <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+              <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+            </span>
+          </div>
+          <div class="tl-text-body">${escapeHtml(seg.texto || '')}</div>
+          <div class="tl-fotos">
+            ${fotosThumbs}
+            <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
   function renderIncidenciasCloud() {
     document.querySelectorAll('.incidencia-card[data-source="onedrive"]').forEach(el => el.remove());
     const lista = document.getElementById('lista-incidencias');
     [...incidenciasCloud].reverse().forEach(inc => lista.insertBefore(crearCardIncidencia(inc), lista.firstChild));
+    asegurarBotonesEliminar();
+    actualizarStats();
+    filtrar();
+  }
+
+  function asegurarBotonesEliminar() {
+    document.querySelectorAll('.incidencia-card').forEach(card => {
+      if (card.querySelector('.inc-delete-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'inc-delete-btn';
+      btn.type = 'button';
+      btn.title = 'Eliminar incidencia';
+      btn.textContent = 'Eliminar';
+      btn.onclick = (event) => borrarIncidencia(event, btn);
+      card.appendChild(btn);
+    });
+  }
+
+  async function borrarIncidencia(event, btn) {
+    event.stopPropagation();
+    const card = btn.closest('.incidencia-card');
+    const title = card.querySelector('.titulo-texto')?.textContent?.trim() || 'esta incidencia';
+    if (!confirm(`¿Eliminar "${title}"? Esta acción no se puede deshacer.`)) return;
+
+    const id = card.dataset.id;
+    const isCloud = card.dataset.source === 'onedrive' && id;
+    if (isCloud && graphAccount) {
+      try {
+        const inc = incidenciasCloud.find(item => item.id === id);
+        if (inc) {
+          const folder = `${fotosBasePath}/${safePathSegment(inc.unidad)}/${inc.id}`;
+          try {
+            await graphFetch(`${graphPath(folder)}:`, { method: 'DELETE' });
+          } catch (err) {
+            if (!String(err.message).startsWith('404')) console.warn('No se pudo borrar carpeta de fotos', err);
+          }
+        }
+        incidenciasCloud = incidenciasCloud.filter(inc => inc.id !== id);
+        await writeJsonFile(incidenciasJsonPath, incidenciasCloud);
+        setSyncStatus(`OneDrive conectado · ${incidenciasCloud.length} incidencias`);
+      } catch (err) {
+        console.error(err);
+        alert('No se pudo borrar del JSON de OneDrive. No he eliminado la tarjeta.');
+        return;
+      }
+    }
+
+    card.remove();
     actualizarStats();
     filtrar();
   }
 
   function crearCardIncidencia(inc) {
     const td = tipoData[inc.tipo] || { emoji:'📦', cls:'otro' };
+    const estado = inc.estado || 'abierta';
+    const estadoLabels = { abierta:'● Abierta', 'en-curso':'● En curso', presupuesto:'● Pdte. presupuesto', resuelta:'● Resuelta' };
     const pagoLabel = { propietario:'Propietario', inquilino:'Inquilino', seguro:'Seguro' }[inc.pago] || 'Propietario';
     const pagoCls = { propietario:'propietario', inquilino:'inquilino-pay', seguro:'seguro' }[inc.pago] || 'propietario';
     const fechaObj = inc.fecha ? new Date(inc.fecha) : new Date();
     const fechaStr = fechaObj.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
+    const fechaLong = fechaObj.toLocaleDateString('es-ES', { day:'numeric', month:'long', year:'numeric' });
+    const fotos = inc.fotos || [];
+    const seguimientoItems = (inc.seguimiento || []).map(seg => renderSeguimientoItem(seg)).join('');
+    const fotosSeguimiento = fotos.length ? `
+      <div class="tl-item tl-foto">
+        <div class="tl-dot-wrap"><div class="tl-dot">📎</div></div>
+        <div class="tl-body">
+          <div class="tl-meta-row">
+            <span class="tl-label">Foto / evidencia</span>
+            <span class="tl-date-lbl">${fechaStr}</span>
+          </div>
+          <div class="tl-text-body">${fotos.length} archivo(s) subido(s) a OneDrive.</div>
+          <div class="tl-fotos">
+            ${fotos.map((f, i) => `<div class="tl-foto-thumb" title="${escapeAttr(f)}" onclick="event.stopPropagation(); abrirLightbox('📎')">📎<small>${i + 1}</small></div>`).join('')}
+            <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+          </div>
+        </div>
+      </div>` : '';
+
     const card = document.createElement('div');
     card.className = 'incidencia-card';
-    card.dataset.estado = inc.estado || 'abierta';
+    card.dataset.estado = estado;
     card.dataset.tipo = td.cls;
     card.dataset.source = 'onedrive';
     card.dataset.id = inc.id || '';
@@ -1934,10 +2059,105 @@
               </div>
               <div class="meta-row"><span class="meta-reparador">${escapeHtml(inc.reparador || 'Sin asignar')}</span></div>
               <div class="meta-row">
-                <span>📎 ${(inc.fotos || []).length} archivo(s)</span>
+                <span>📎 ${fotos.length} archivo(s)</span>
                 <span class="sep">·</span>
-                <span class="badge abierta estado-badge">● Abierta</span>
+                <span class="badge ${estado} estado-badge">${estadoLabels[estado] || estado}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inc-detail">
+        <div class="detail-grid">
+          <div class="detail-col">
+            <div class="detail-section-title">
+              Datos de la incidencia
+              <button class="edit-link" onclick="event.stopPropagation(); entrarEdicionFicha(this)">✎ Editar</button>
+            </div>
+            <div class="detail-field">
+              <span class="lbl">Descripción</span>
+              <span class="val">${escapeHtml(inc.descripcion || '—')}</span>
+              <textarea class="desc-textarea">${escapeHtml(inc.descripcion || '')}</textarea>
+              <div class="desc-actions">
+                <button class="btn-cancel" onclick="event.stopPropagation(); cancelarDescripcion(this)">Cancelar</button>
+                <button class="btn-save" onclick="event.stopPropagation(); guardarDescripcion(this)">Guardar</button>
+              </div>
+            </div>
+            <div class="detail-field">
+              <span class="lbl">Fecha apertura</span>
+              <span class="val">${fechaLong}</span>
+              <input type="date" class="edit-input" data-field="fecha" data-saved="${escapeAttr(inc.fecha || '')}" value="${escapeAttr(inc.fecha || '')}">
+            </div>
+            <div class="detail-field">
+              <span class="lbl">Tipo</span>
+              <span class="val">${td.emoji} ${escapeHtml(inc.tipo || 'Otro')}</span>
+              <select class="edit-input" data-field="tipo" data-saved="${escapeAttr(inc.tipo || 'Otro')}">
+                <option>Humedades</option><option>Caldera</option><option>Electricidad</option><option>Fontanería</option>
+                <option>Estructura</option><option>Electro.</option><option>Cerrajería</option><option>Otro</option>
+              </select>
+            </div>
+            <div class="detail-field">
+              <span class="lbl">¿Quién paga?</span>
+              <span class="val"><span class="badge ${pagoCls}">${pagoLabel}</span></span>
+              <select class="edit-input" data-field="pago" data-saved="${escapeAttr(inc.pago || 'propietario')}">
+                <option value="propietario">Propietario</option>
+                <option value="inquilino">Inquilino</option>
+                <option value="seguro">Seguro</option>
+              </select>
+            </div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-section-title">Reparador</div>
+            <div class="detail-field">
+              <span class="lbl">Empresa / persona</span>
+              <span class="val">${escapeHtml(inc.reparador || 'Sin asignar')}</span>
+              <input type="text" class="edit-input" data-field="empresa" data-saved="${escapeAttr(inc.reparador || '')}" value="${escapeAttr(inc.reparador || '')}">
+            </div>
+            <div class="detail-field">
+              <span class="lbl">Teléfono</span>
+              <span class="val">${escapeHtml(inc.telefono || '—')}</span>
+              <input type="tel" class="edit-input" data-field="telefono" data-saved="${escapeAttr(inc.telefono || '')}" value="${escapeAttr(inc.telefono || '')}">
+            </div>
+            <div class="detail-field">
+              <span class="lbl">Estado</span>
+              <div class="estado-selector">
+                <button class="estado-btn abierta ${estado === 'abierta' ? 'active' : ''}" onclick="cambiarEstado(event, this, 'abierta')">Abierta</button>
+                <button class="estado-btn en-curso ${estado === 'en-curso' ? 'active' : ''}" onclick="cambiarEstado(event, this, 'en-curso')">En curso</button>
+                <button class="estado-btn presupuesto ${estado === 'presupuesto' ? 'active' : ''}" onclick="cambiarEstado(event, this, 'presupuesto')">Pdte. presupuesto</button>
+                <button class="estado-btn resuelta ${estado === 'resuelta' ? 'active' : ''}" onclick="cambiarEstado(event, this, 'resuelta')">Resuelta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ficha-edit-actions">
+          <button class="btn-cancel" onclick="event.stopPropagation(); cancelarEdicionFicha(this)">Cancelar</button>
+          <button class="btn-save" onclick="event.stopPropagation(); guardarEdicionFicha(this)">Guardar cambios</button>
+        </div>
+        <div class="seguimiento">
+          <div class="seg-title">Hilo de seguimiento</div>
+          <div class="tl-items">${fotosSeguimiento}${seguimientoItems}</div>
+          <button class="add-seg-btn" onclick="toggleSegForm(event, this)">+ Añadir anotación</button>
+          <div class="seg-form">
+            <div class="seg-form-row">
+              <select>
+                <option>🔧 Intervención técnica</option>
+                <option>📞 Llamada</option>
+                <option>💶 Presupuesto recibido</option>
+                <option>📸 Foto / evidencia</option>
+                <option>✅ Cierre</option>
+                <option>📝 Nota</option>
+              </select>
+              <input type="date" />
+            </div>
+            <textarea placeholder="Añade el seguimiento..."></textarea>
+            <div class="seg-fotos-row">
+              <div class="seg-fotos-preview"></div>
+              <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoPreview(this)">+</button>
+            </div>
+            <div class="seg-form-actions">
+              <button class="btn-cancel" onclick="cerrarSegForm(event, this)">Cancelar</button>
+              <button class="btn-save" onclick="guardarSeg(event, this)">Guardar</button>
             </div>
           </div>
         </div>
@@ -2172,12 +2392,23 @@
   // ── Añadir / borrar fotos en una anotación ya existente ──
   function addFotoToItem(btn) {
     const fotosBox = btn.closest('.tl-fotos');
-    const emoji = fotoEmojis[Math.floor(Math.random() * fotoEmojis.length)];
-    const thumb = document.createElement('div');
-    thumb.className = 'tl-foto-thumb';
-    thumb.innerHTML = `${emoji}<button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button>`;
-    thumb.onclick = (e) => { if (e.target.classList.contains('tl-foto-del')) return; e.stopPropagation(); abrirLightbox(emoji); };
-    fotosBox.insertBefore(thumb, btn);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*,application/pdf';
+    input.className = 'hidden-file-input';
+    input.onchange = () => {
+      const count = input.files?.length || 0;
+      if (!count) return;
+      const thumb = document.createElement('div');
+      thumb.className = 'tl-foto-thumb';
+      thumb.title = `${count} archivo(s) seleccionado(s)`;
+      thumb.innerHTML = `📎<small>${count}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button>`;
+      fotosBox.insertBefore(thumb, btn);
+    };
+    document.body.appendChild(input);
+    input.click();
+    setTimeout(() => input.remove(), 1000);
   }
   function borrarFoto(btn) {
     btn.closest('.tl-foto-thumb').remove();
@@ -2235,16 +2466,22 @@
   }
 
   // ── Fotos en hilo de seguimiento ──
-  const fotoEmojis = ['📷','🧱','💧','🔧','🪛','🧰'];
   function addFotoPreview(btn) {
     const row = btn.closest('.seg-fotos-row');
     const preview = row.querySelector('.seg-fotos-preview');
-    const emoji = fotoEmojis[Math.floor(Math.random() * fotoEmojis.length)];
-    const thumb = document.createElement('div');
-    thumb.className = 'tl-foto-thumb';
-    thumb.textContent = emoji;
-    thumb.onclick = (e) => { e.stopPropagation(); abrirLightbox(emoji); };
-    preview.appendChild(thumb);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*,application/pdf';
+    input.className = 'hidden-file-input';
+    input.onchange = () => {
+      const files = Array.from(input.files || []);
+      row._selectedFiles = files;
+      preview.textContent = files.length ? `${files.length} archivo(s) seleccionado(s)` : '';
+    };
+    document.body.appendChild(input);
+    input.click();
+    setTimeout(() => input.remove(), 1000);
   }
 
   // ── Lightbox ──
@@ -2291,7 +2528,10 @@
         renderIncidenciasCloud();
         setSyncStatus(`Guardado en OneDrive · ${incidenciasCloud.length} incidencias`);
       } else {
-        document.getElementById('lista-incidencias').insertBefore(crearCardIncidencia(incidencia), document.getElementById('lista-incidencias').firstChild);
+        const card = crearCardIncidencia(incidencia);
+        card.dataset.source = 'local';
+        document.getElementById('lista-incidencias').insertBefore(card, document.getElementById('lista-incidencias').firstChild);
+        asegurarBotonesEliminar();
         alert('Incidencia creada solo en esta sesión. Conecta Microsoft para guardarla en OneDrive.');
       }
     } catch (err) {
@@ -2315,6 +2555,7 @@
     document.querySelectorAll('.tipo-pick-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
   }
 
+  asegurarBotonesEliminar();
   initMicrosoft();
 
   // Seguimiento inline  // Seguimiento inline
@@ -2344,9 +2585,10 @@
     '📸 Foto / evidencia':'📸','✅ Cierre':'✅','📝 Nota':'📝'
   };
 
-  function guardarSeg(e, btn) {
+  async function guardarSeg(e, btn) {
     e.stopPropagation();
     const form  = btn.closest('.seg-form');
+    const card = form.closest('.incidencia-card');
     const tipo  = form.querySelector('select').value;
     const texto = form.querySelector('textarea').value.trim();
     const fecha = form.querySelector('input[type=date]').value;
@@ -2357,15 +2599,31 @@
     const fechaStr = d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
     const emoji = segEmoji[tipo] || '📝';
 
-    const fotosPreview = form.querySelectorAll('.seg-fotos-preview .tl-foto-thumb');
+    const selectedFiles = Array.from(form.querySelector('.seg-fotos-row')?._selectedFiles || []);
+    const segId = `SEG-${Date.now()}`;
+    let adjuntos = [];
+    if (selectedFiles.length && graphAccount && card.dataset.source === 'onedrive') {
+      try {
+        setSyncStatus('Subiendo adjuntos de seguimiento...');
+        adjuntos = await uploadSeguimientoFiles(card, selectedFiles, segId);
+      } catch (err) {
+        console.error(err);
+        alert('No se pudieron subir las fotos/documentos del seguimiento.');
+        return;
+      }
+    } else if (selectedFiles.length) {
+      adjuntos = selectedFiles.map((_, i) => `Adjunto local ${i + 1}`);
+    }
+
+    const fotosPreview = adjuntos;
     let fotosThumbs = '';
-    fotosPreview.forEach(t => {
-      const em = t.textContent.replace('×','').trim();
-      fotosThumbs += `<div class="tl-foto-thumb" onclick="event.stopPropagation(); abrirLightbox('${em}')">${em}<button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>`;
+    fotosPreview.forEach((path, i) => {
+      fotosThumbs += `<div class="tl-foto-thumb" title="${escapeAttr(path)}" onclick="event.stopPropagation(); abrirLightbox('📎')">📎<small>${i + 1}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>`;
     });
 
     const item = document.createElement('div');
     item.className = `tl-item ${cfg.cls}`;
+    item.dataset.segId = segId;
     item.innerHTML = `
       <div class="tl-dot-wrap"><div class="tl-dot">${emoji}</div></div>
       <div class="tl-body">
@@ -2386,8 +2644,35 @@
 
     const container = form.closest('.seguimiento').querySelector('.tl-items');
     container.appendChild(item);
+
+    if (card.dataset.source === 'onedrive' && card.dataset.id) {
+      const inc = incidenciasCloud.find(i => i.id === card.dataset.id);
+      if (inc) {
+        if (!Array.isArray(inc.seguimiento)) inc.seguimiento = [];
+        inc.seguimiento.push({
+          id: segId,
+          label: cfg.label,
+          tipo,
+          texto,
+          fecha,
+          adjuntos,
+          creadoEn: new Date().toISOString()
+        });
+        inc.actualizadoEn = new Date().toISOString();
+        try {
+          await writeJsonFile(incidenciasJsonPath, incidenciasCloud);
+          setSyncStatus(`OneDrive conectado · ${incidenciasCloud.length} incidencias`);
+        } catch (err) {
+          console.error(err);
+          alert('La anotación se ha añadido en pantalla, pero no se pudo guardar en OneDrive.');
+        }
+      }
+    }
+
     form.querySelector('textarea').value = '';
-    form.querySelector('.seg-fotos-preview').innerHTML = '';
+    form.querySelector('.seg-fotos-preview').textContent = '';
+    const row = form.querySelector('.seg-fotos-row');
+    if (row) row._selectedFiles = [];
     form.classList.remove('visible');
   }
 </script>
