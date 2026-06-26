@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incidencias</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --slate-950: #0c1220;
+    --slate-900: #111827;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50:  #f8fafc;
+    --white:     #ffffff;
+    --indigo:    #4f46e5;
+    --indigo-l:  #6366f1;
+    --indigo-bg: #eef2ff;
+    --green:     #16a34a;
+    --green-bg:  #dcfce7;
+    --amber:     #d97706;
+    --amber-bg:  #fef3c7;
+    --red:       #dc2626;
+    --red-bg:    #fee2e2;
+    --blue:      #2563eb;
+    --blue-bg:   #dbeafe;
+    --orange:    #ea580c;
+    --orange-bg: #ffedd5;
+    --purple:    #7c3aed;
+    --purple-bg: #ede9fe;
+    --radius:    10px;
+    --shadow:    0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.14);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--slate-100);
+    color: var(--slate-900);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--slate-950);
+    color: white;
+    padding: 0 24px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand { font-family: 'DM Serif Display', serif; font-size: 18px; color: white; }
+  .brand span { color: #6366f1; }
+  .header-actions { display: flex; gap: 8px; }
+  .btn-header {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+    color: white; padding: 6px 14px; border-radius: 6px;
+    font-size: 13px; cursor: pointer; font-family: inherit; transition: background .15s;
+  }
+  .btn-header:hover { background: rgba(255,255,255,.18); }
+  .btn-header.primary { background: var(--indigo); border-color: var(--indigo); }
+  .btn-header.primary:hover { background: var(--indigo-l); }
+
+  /* ── BREADCRUMB ── */
+  .breadcrumb {
+    background: white; border-bottom: 1px solid var(--slate-200);
+    padding: 10px 24px; display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--slate-500);
+  }
+  .breadcrumb a { color: var(--indigo); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: var(--slate-300); }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 960px; margin: 0 auto; padding: 24px 16px 80px; }
+
+  /* ── BUSCADOR ── */
+  .search-row { margin-bottom: 14px; }
+  .search-input {
+    width: 100%; border: 1px solid var(--slate-200); border-radius: 10px;
+    padding: 11px 14px; font-family: inherit; font-size: 14px;
+    color: var(--slate-800); outline: none; background: white;
+    box-shadow: var(--shadow); transition: border-color .15s;
+  }
+  .search-input:focus { border-color: var(--indigo); }
+  .search-input::placeholder { color: var(--slate-400); }
+
+  /* ── RESUMEN STATS ── */
+  .stats-row {
+    display: flex; flex-wrap: wrap;
+    gap: 8px; margin-bottom: 16px;
+  }
+  .stat-pill {
+    background: white; border-radius: 20px;
+    box-shadow: var(--shadow); border: 1px solid var(--slate-200);
+    padding: 6px 14px 6px 12px;
+    display: flex; align-items: center; gap: 7px;
+    border-left: 3px solid transparent;
+  }
+  .stat-pill.red    { border-left-color: var(--red); }
+  .stat-pill.amber  { border-left-color: var(--amber); }
+  .stat-pill.blue   { border-left-color: var(--blue); }
+  .stat-pill.green  { border-left-color: var(--green); }
+  .stat-pill .num { font-size: 16px; font-weight: 700; line-height: 1; }
+  .stat-pill.red   .num { color: var(--red); }
+  .stat-pill.amber .num { color: var(--amber); }
+  .stat-pill.blue  .num { color: var(--blue); }
+  .stat-pill.green .num { color: var(--green); }
+  .stat-pill .lbl { font-size: 12px; color: var(--slate-500); font-weight: 500; white-space: nowrap; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+  }
+  .toolbar-left { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+  .filter-select {
+    border: 1px solid var(--slate-200); border-radius: 6px;
+    padding: 8px 12px; font-size: 13px; font-family: inherit;
+    color: var(--slate-700); background: white; outline: none;
+    cursor: pointer; transition: border-color .15s;
+  }
+  .filter-select:focus { border-color: var(--indigo); }
+  .btn-nueva {
+    background: var(--indigo); color: white; border: none;
+    padding: 8px 18px; border-radius: 6px; font-family: inherit;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn-nueva:hover { background: var(--indigo-l); }
+
+  /* ── LISTA INCIDENCIAS ── */
+  .incidencia-card {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 12px;
+    border: 1px solid var(--slate-200);
+    overflow: hidden; cursor: pointer;
+    transition: box-shadow .15s, border-color .15s;
+  }
+  .incidencia-card:hover { box-shadow: var(--shadow-lg); border-color: var(--slate-300); }
+  .incidencia-card.expanded { border-color: var(--indigo); }
+
+  .inc-header {
+    padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .inc-header-row {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .tipo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; margin-top: 2px;
+  }
+  .inc-main { flex: 1; min-width: 0; }
+  .inc-title { font-size: 15px; font-weight: 600; color: var(--slate-900); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .inc-title .titulo-texto { flex: 1 1 auto; }
+  .inc-title .unidad-edit-btn { flex-shrink: 0; }
+  .inc-meta { display: flex; flex-direction: column; gap: 3px; }
+  .meta-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 12px; color: var(--slate-500); line-height: 1.3;
+  }
+  .inc-meta .badge { padding: 1px 8px; font-size: 11px; }
+  .inc-meta .sep { color: var(--slate-300); }
+  .titulo-edit-form { display: none; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .titulo-edit-form.visible { display: flex; }
+  .titulo-edit-form input {
+    flex: 1; border: 1px solid var(--indigo); border-radius: 6px;
+    padding: 6px 8px; font-family: inherit; font-size: 14px; font-weight: 600; outline: none;
+  }
+
+  /* badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  }
+  .badge.abierta        { background: var(--red-bg);    color: var(--red); }
+  .badge.en-curso       { background: var(--amber-bg);  color: var(--amber); }
+  .badge.presupuesto    { background: var(--orange-bg); color: var(--orange); }
+  .badge.resuelta       { background: var(--green-bg);  color: var(--green); }
+  .badge.descartada     { background: var(--slate-100); color: var(--slate-500); }
+  .badge.propietario    { background: var(--indigo-bg); color: var(--indigo); }
+  .badge.inquilino-pay  { background: var(--blue-bg);   color: var(--blue); }
+  .badge.seguro         { background: var(--purple-bg); color: var(--purple); }
+
+  /* tipo colores */
+  .tipo-caldera     { background: var(--orange-bg); }
+  .tipo-humedades   { background: var(--blue-bg); }
+  .tipo-electricidad{ background: var(--amber-bg); }
+  .tipo-fontaneria  { background: var(--blue-bg); }
+  .tipo-estructura  { background: var(--red-bg); }
+  .tipo-electrodomestico { background: var(--purple-bg); }
+  .tipo-cerrajeria  { background: var(--slate-100); }
+  .tipo-otro        { background: var(--slate-100); }
+
+  /* ── DETALLE EXPANDIDO ── */
+  .inc-detail {
+    display: none;
+    border-top: 1px solid var(--slate-100);
+    background: var(--slate-50);
+  }
+  .inc-detail.visible { display: block; }
+
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .detail-col { padding: 20px 24px; }
+  .detail-col:first-child { border-right: 1px solid var(--slate-200); }
+
+  .detail-section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--slate-400);
+    margin-bottom: 12px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--slate-200);
+  }
+
+  .detail-fields { display: flex; flex-direction: column; gap: 10px; }
+  .detail-field label {
+    font-size: 11px; font-weight: 600; color: var(--slate-500);
+    text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 2px;
+  }
+  .detail-field .val { font-size: 13px; color: var(--slate-800); font-weight: 500; }
+
+  /* estado selector */
+  .estado-selector {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;
+  }
+  .estado-btn {
+    padding: 5px 12px; border-radius: 20px; border: 2px solid transparent;
+    font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+  .estado-btn.abierta     { background: var(--red-bg);    color: var(--red); }
+  .estado-btn.en-curso    { background: var(--amber-bg);  color: var(--amber); }
+  .estado-btn.presupuesto { background: var(--orange-bg); color: var(--orange); }
+  .estado-btn.resuelta    { background: var(--green-bg);  color: var(--green); }
+  .estado-btn.active { border-color: currentColor; }
+
+  /* ── SEGUIMIENTO / TIMELINE ── */
+  .seguimiento { padding: 0 24px 20px; }
+  .seg-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--slate-400);
+    padding: 16px 0 12px; border-bottom: 1px solid var(--slate-200);
+    margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .tl-item {
+    display: flex; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid var(--slate-100);
+  }
+  .tl-item:last-of-type { border-bottom: none; }
+  .tl-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .tl-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .tl-body { flex: 1; min-width: 0; }
+  .tl-meta-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 3px; flex-wrap: wrap;
+  }
+  .tl-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .tl-date-lbl { font-size: 12px; color: var(--slate-400); margin-left: auto; white-space: nowrap; }
+  .tl-text-body { font-size: 13px; color: var(--slate-700); line-height: 1.5; }
+
+  .tl-intervencion .tl-dot { background: var(--amber-bg); }
+  .tl-intervencion .tl-label { color: var(--amber); }
+  .tl-llamada2     .tl-dot { background: var(--blue-bg); }
+  .tl-llamada2     .tl-label { color: var(--blue); }
+  .tl-presupuesto  .tl-dot { background: var(--purple-bg); }
+  .tl-presupuesto  .tl-label { color: var(--purple); }
+  .tl-foto         .tl-dot { background: var(--slate-100); }
+  .tl-foto         .tl-label { color: var(--slate-600); }
+  .tl-cierre       .tl-dot { background: var(--green-bg); }
+  .tl-cierre       .tl-label { color: var(--green); }
+  .tl-nota2        .tl-dot { background: var(--slate-100); }
+  .tl-nota2        .tl-label { color: var(--slate-500); }
+
+  /* fotos en timeline */
+  .tl-fotos {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .tl-foto-thumb {
+    width: 72px; height: 56px; border-radius: 6px;
+    background: var(--slate-200); object-fit: cover;
+    border: 2px solid var(--slate-300);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer; transition: border-color .15s;
+    overflow: hidden;
+  }
+  .tl-foto-thumb:hover { border-color: var(--indigo); }
+  .tl-foto-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* add seguimiento */
+  .add-seg-btn {
+    width: 100%; padding: 9px;
+    border: 2px dashed var(--slate-200); border-radius: 8px;
+    background: transparent; color: var(--slate-400);
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 8px;
+  }
+  .add-seg-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-bg); }
+
+  /* ── MODAL NUEVA INCIDENCIA ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.55); align-items: flex-start; justify-content: center;
+    padding: 32px 16px; overflow-y: auto;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: white; border-radius: 14px; box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 560px; overflow: hidden;
+  }
+  .modal-header {
+    background: var(--slate-900); padding: 18px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h2 { color: white; font-size: 16px; font-weight: 600; }
+  .modal-close {
+    background: rgba(255,255,255,.1); border: none; color: white;
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .modal-body { padding: 24px; }
+  .modal-footer {
+    padding: 16px 24px; border-top: 1px solid var(--slate-100);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+
+  /* form fields */
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: var(--slate-600); margin-bottom: 5px;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%; border: 1px solid var(--slate-200); border-radius: 7px;
+    padding: 9px 12px; font-family: inherit; font-size: 13px;
+    color: var(--slate-900); background: white; outline: none;
+    transition: border-color .15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: var(--indigo); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* tipo picker */
+  .tipo-picker {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  }
+  .tipo-pick-btn {
+    border: 2px solid var(--slate-200); border-radius: 8px;
+    padding: 10px 6px; background: white; cursor: pointer;
+    font-family: inherit; font-size: 11px; font-weight: 600;
+    color: var(--slate-600); text-align: center; transition: all .15s;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .tipo-pick-btn .emoji { font-size: 20px; }
+  .tipo-pick-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-bg); }
+  .tipo-pick-btn.selected { border-color: var(--indigo); background: var(--indigo-bg); color: var(--indigo); }
+
+  /* upload zone */
+  .upload-zone {
+    border: 2px dashed var(--slate-200); border-radius: 8px;
+    padding: 20px; text-align: center; cursor: pointer;
+    transition: all .15s; background: var(--slate-50);
+  }
+  .upload-zone:hover { border-color: var(--indigo); background: var(--indigo-bg); }
+  .upload-zone .icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-zone p { font-size: 12px; color: var(--slate-500); }
+
+  /* btn styles */
+  .btn-cancel {
+    padding: 9px 18px; border-radius: 7px;
+    border: 1px solid var(--slate-200); background: white;
+    font-family: inherit; font-size: 13px; color: var(--slate-600); cursor: pointer;
+  }
+  .btn-save {
+    padding: 9px 20px; border-radius: 7px; border: none;
+    background: var(--indigo); font-family: inherit;
+    font-size: 13px; color: white; font-weight: 600; cursor: pointer; transition: background .15s;
+  }
+  .btn-save:hover { background: var(--indigo-l); }
+
+  /* ── EMPTY ── */
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--slate-400);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 16px; color: var(--slate-600); margin-bottom: 6px; }
+  .empty-state p { font-size: 13px; }
+
+  /* ── SEGUIMIENTO INLINE FORM ── */
+  .seg-form {
+    display: none; background: white; border: 1px solid var(--slate-200);
+    border-radius: 8px; padding: 14px; margin-top: 10px;
+  }
+  .seg-form.visible { display: block; }
+  .seg-form-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .seg-form select, .seg-form textarea, .seg-form input {
+    border: 1px solid var(--slate-200); border-radius: 6px;
+    padding: 7px 10px; font-family: inherit; font-size: 13px;
+    color: var(--slate-900); outline: none; transition: border-color .15s;
+  }
+  .seg-form select:focus, .seg-form textarea:focus { border-color: var(--indigo); }
+  .seg-form textarea { width: 100%; resize: vertical; min-height: 60px; margin-bottom: 8px; }
+  .seg-form-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+  /* ── UNIDAD / ARRENDATARIO ── */
+  .unidad-line {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: nowrap; min-width: 0;
+  }
+  .unidad-code {
+    font-family: 'Inter', monospace; font-weight: 700; font-size: 12px;
+    color: var(--indigo); background: var(--indigo-bg);
+    padding: 2px 7px; border-radius: 5px; letter-spacing: .02em; flex-shrink: 0; white-space: nowrap;
+  }
+  .unidad-tenant {
+    font-size: 12.5px; color: var(--slate-600); font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex: 1 1 auto; min-width: 0;
+  }
+  .unidad-edit-btn {
+    border: none; background: transparent; cursor: pointer;
+    color: var(--slate-400); font-size: 12px; padding: 2px 4px;
+    border-radius: 4px; line-height: 1; flex-shrink: 0; margin-left: auto;
+  }
+  .unidad-edit-btn:hover { color: var(--indigo); background: var(--indigo-bg); }
+  .unidad-edit-form {
+    display: none; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;
+  }
+  .unidad-edit-form.visible { display: flex; }
+  .unidad-edit-form input {
+    border: 1px solid var(--slate-200); border-radius: 6px;
+    padding: 5px 8px; font-family: inherit; font-size: 12px; outline: none;
+  }
+  .unidad-edit-form input:focus { border-color: var(--indigo); }
+  .unidad-edit-form input.code-input { width: 110px; font-weight: 700; color: var(--indigo); }
+  .unidad-edit-form input.tenant-input { width: 150px; }
+  .btn-save-mini {
+    border: none; background: var(--indigo); color: white;
+    font-size: 11px; font-weight: 600; padding: 5px 10px;
+    border-radius: 6px; cursor: pointer; font-family: inherit;
+  }
+  .btn-save-mini:hover { background: var(--indigo-l); }
+
+  /* ── DESCRIPCIÓN EDITABLE ── */
+  .desc-edit-row { display: flex; align-items: flex-start; gap: 6px; }
+  .desc-edit-row .val { flex: 1; }
+  .desc-textarea {
+    display: none;
+    width: 100%; min-height: 70px; border: 1px solid var(--indigo);
+    border-radius: 6px; padding: 8px; font-family: inherit; font-size: 13px;
+    color: var(--slate-800); outline: none; resize: vertical; margin-top: 4px;
+  }
+  .desc-actions { display: none; gap: 6px; margin-top: 6px; }
+  .desc-actions.visible { display: flex; }
+
+  /* ── FOTOS EN FORMULARIO DE SEGUIMIENTO ── */
+  .seg-fotos-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .btn-add-foto {
+    border: 1px dashed var(--slate-300); background: var(--slate-50);
+    color: var(--slate-500); font-size: 12px; font-weight: 500;
+    padding: 6px 10px; border-radius: 6px; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .btn-add-foto:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-bg); }
+  .seg-fotos-preview { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg-fotos-preview .tl-foto-thumb { width: 40px; height: 40px; font-size: 16px; }
+
+  /* ── LIGHTBOX ── */
+  .lightbox-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: rgba(12,18,32,.9); align-items: center; justify-content: center;
+    cursor: zoom-out;
+  }
+  .lightbox-overlay.visible { display: flex; }
+  .lightbox-content {
+    width: min(80vw, 360px); height: min(80vw, 360px);
+    background: var(--slate-50); border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 96px; box-shadow: var(--shadow-lg);
+  }
+  .lightbox-close {
+    position: absolute; top: 20px; right: 20px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.12); border: none; color: white;
+    font-size: 18px; cursor: pointer;
+  }
+
+  /* ── EDICIÓN COMPLETA DE FICHA ── */
+  .detail-section-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .btn-editar-ficha {
+    border: none; background: transparent; color: var(--indigo);
+    font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+    padding: 2px 6px; border-radius: 5px; display: flex; align-items: center; gap: 4px;
+  }
+  .btn-editar-ficha:hover { background: var(--indigo-bg); }
+  .edit-input { display: none; }
+  .detail-grid.editing .val { display: none; }
+  .detail-grid.editing .desc-edit-row .val { display: block; }
+  .detail-grid.editing .edit-input {
+    display: block; width: 100%; border: 1px solid var(--indigo); border-radius: 6px;
+    padding: 6px 8px; font-family: inherit; font-size: 13px; color: var(--slate-800); outline: none;
+  }
+  .detail-grid.editing .btn-editar-ficha { display: none; }
+  .ficha-edit-actions { display: none; gap: 8px; justify-content: flex-end; padding: 0 24px 16px; }
+  .detail-grid.editing ~ .ficha-edit-actions,
+  .ficha-edit-actions.visible { display: flex; }
+
+  .tl-edit-inline select, .tl-edit-inline textarea, .tl-edit-inline input {
+    border: 1px solid var(--slate-200); border-radius: 6px;
+    padding: 7px 10px; font-family: inherit; font-size: 13px;
+    color: var(--slate-900); outline: none; transition: border-color .15s;
+  }
+  .tl-edit-inline select:focus, .tl-edit-inline textarea:focus, .tl-edit-inline input:focus { border-color: var(--indigo); }
+  .tl-edit-inline textarea { width: 100%; resize: vertical; min-height: 60px; margin-bottom: 8px; }
+  .tl-item-actions { display: flex; gap: 4px; }
+  .tl-action-btn {
+    border: none; background: transparent; cursor: pointer; color: var(--slate-400);
+    font-size: 11px; padding: 2px 5px; border-radius: 4px; line-height: 1;
+  }
+  .tl-action-btn:hover { color: var(--indigo); background: var(--indigo-bg); }
+  .tl-item.editing-tl .tl-text-body { display: none; }
+  .tl-edit-inline { margin-top: 8px; }
+  .tl-foto-thumb { position: relative; }
+  .tl-foto-del {
+    position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--slate-700); color: white; border: none;
+    font-size: 11px; line-height: 1; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; padding: 0;
+  }
+  .tl-foto-add {
+    width: 52px; height: 52px; border: 1.5px dashed var(--slate-300); border-radius: 8px;
+    background: var(--slate-50); color: var(--slate-400); font-size: 18px; cursor: pointer;
+  }
+  .tl-foto-add:hover { border-color: var(--indigo); color: var(--indigo); }
+
+  /* ── MOBILE ── */
+  @media (max-width: 600px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-col:first-child { border-right: none; border-bottom: 1px solid var(--slate-200); }
+    .tipo-picker { grid-template-columns: repeat(4, 1fr); }
+    .form-row-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="brand">Control<span>·</span>Incidencias</div>
+  <div class="header-actions">
+    <button class="btn-nueva" onclick="abrirModal()">+ Nueva incidencia</button>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- BUSCADOR -->
+  <div class="search-row">
+    <input type="text" id="buscador" class="search-input" placeholder="🔍 Buscar por piso (ej. ROS_1_2) o por nombre del arrendatario..." oninput="filtrar()">
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-pill red">
+      <span class="num" id="n-abierta">1</span>
+      <span class="lbl">Abiertas</span>
+    </div>
+    <div class="stat-pill amber">
+      <span class="num" id="n-curso">1</span>
+      <span class="lbl">En curso</span>
+    </div>
+    <div class="stat-pill blue">
+      <span class="num" id="n-presupuesto">1</span>
+      <span class="lbl">Pdte. presupuesto</span>
+    </div>
+    <div class="stat-pill green">
+      <span class="num" id="n-resuelta">2</span>
+      <span class="lbl">Resueltas</span>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <select class="filter-select" onchange="filtrar()">
+        <option value="todas">Todos los estados</option>
+        <option value="abierta">Abiertas</option>
+        <option value="en-curso">En curso</option>
+        <option value="presupuesto">Pdte. presupuesto</option>
+        <option value="resuelta">Resueltas</option>
+        <option value="descartada">Descartadas</option>
+      </select>
+      <select class="filter-select" onchange="filtrar()" id="filtro-tipo">
+        <option value="todas">Todos los tipos</option>
+        <option value="caldera">Caldera</option>
+        <option value="humedades">Humedades</option>
+        <option value="electricidad">Electricidad</option>
+        <option value="fontaneria">Fontanería</option>
+        <option value="estructura">Estructura</option>
+        <option value="electrodomestico">Electrodoméstico</option>
+        <option value="cerrajeria">Cerrajería</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- LISTA -->
+  <div id="lista-incidencias">
+
+    <!-- INCIDENCIA 1 -->
+    <div class="incidencia-card" data-estado="abierta" data-tipo="humedades" onclick="toggleDetalle(this)">
+      <div class="inc-header">
+        <div class="unidad-line">
+          <span class="unidad-code">SEP_2_2</span>
+          <span class="unidad-tenant">Hassan Hamza</span>
+          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
+        </div>
+        <div class="unidad-edit-form" onclick="event.stopPropagation()">
+          <input type="text" class="code-input" list="dl-unidades" value="SEP_2_2" oninput="autoFillUnidad(this)">
+          <input type="text" class="tenant-input" list="dl-arrendatarios" value="Hassan Hamza">
+          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
+        </div>
+        <div class="inc-header-row">
+          <div class="tipo-icon tipo-humedades">💧</div>
+          <div class="inc-main">
+            <div class="inc-title">
+              <span class="titulo-texto">Humedades en baño secundario</span>
+              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
+            </div>
+            <div class="titulo-edit-form" onclick="event.stopPropagation()">
+              <input type="text" value="Humedades en baño secundario">
+              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
+            </div>
+            <div class="inc-meta">
+              <div class="meta-row">
+                <span class="meta-fecha">Abierta 10 ene 2026</span>
+                <span class="sep">·</span>
+                <span class="badge propietario pago-badge">Propietario</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-reparador">Sin asignar</span>
+              </div>
+              <div class="meta-row">
+                <span>🕐 159 días</span>
+                <span class="sep">·</span>
+                <span class="badge abierta estado-badge">● Abierta</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inc-detail">
+        <div class="detail-grid">
+          <div class="detail-col">
+            <div class="detail-section-title">
+              Datos de la incidencia
+              <button class="btn-editar-ficha" onclick="event.stopPropagation(); entrarEdicionFicha(this)">✎ Editar</button>
+            </div>
+            <div class="detail-fields">
+              <div class="detail-field">
+                <label>Descripción <button class="unidad-edit-btn" onclick="event.stopPropagation(); editarDescripcion(this)" title="Editar descripción">✎</button></label>
+                <div class="desc-edit-row">
+                  <div class="val">Manchas de humedad en la pared del baño secundario (junto a la ventana). Posible filtración desde el piso superior o condensación.</div>
+                </div>
+                <textarea class="desc-textarea">Manchas de humedad en la pared del baño secundario (junto a la ventana). Posible filtración desde el piso superior o condensación.</textarea>
+                <div class="desc-actions">
+                  <button class="btn-cancel" onclick="event.stopPropagation(); cancelarDescripcion(this)">Cancelar</button>
+                  <button class="btn-save" onclick="event.stopPropagation(); guardarDescripcion(this)">Guardar</button>
+                </div>
+              </div>
+              <div class="detail-field">
+                <label>Fecha apertura</label>
+                <div class="val">10 enero 2026</div>
+                <input type="date" class="edit-input" data-field="fecha" data-saved="2026-01-10" value="2026-01-10">
+              </div>
+              <div class="detail-field">
+                <label>Tipo</label>
+                <div class="val">💧 Humedades</div>
+                <select class="edit-input" data-field="tipo" data-saved="Humedades">
+                  <option>Humedades</option><option>Caldera</option><option>Electricidad</option>
+                  <option>Fontanería</option><option>Estructura</option><option>Electro.</option>
+                  <option>Cerrajería</option><option>Otro</option>
+                </select>
+              </div>
+              <div class="detail-field">
+                <label>¿Quién paga?</label>
+                <div class="val"><span class="badge propietario">Propietario</span></div>
+                <select class="edit-input" data-field="pago" data-saved="propietario">
+                  <option value="propietario">Propietario</option>
+                  <option value="inquilino">Inquilino</option>
+                  <option value="seguro">Seguro</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-section-title">Reparador</div>
+            <div class="detail-fields">
+              <div class="detail-field">
+                <label>Empresa / persona</label>
+                <div class="val">Sin asignar aún</div>
+                <input type="text" class="edit-input" data-field="empresa" data-saved="Sin asignar aún" value="Sin asignar aún">
+              </div>
+              <div class="detail-field">
+                <label>Teléfono</label>
+                <div class="val">—</div>
+                <input type="tel" class="edit-input" data-field="telefono" data-saved="" value="" placeholder="93 000 00 00">
+              </div>
+              <div class="detail-field"><label>Estado</label>
+                <div class="estado-selector">
+                  <button class="estado-btn abierta active" onclick="cambiarEstado(event, this, 'abierta')">Abierta</button>
+                  <button class="estado-btn en-curso" onclick="cambiarEstado(event, this, 'en-curso')">En curso</button>
+                  <button class="estado-btn presupuesto" onclick="cambiarEstado(event, this, 'presupuesto')">Pdte. presupuesto</button>
+                  <button class="estado-btn resuelta" onclick="cambiarEstado(event, this, 'resuelta')">Resuelta</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ficha-edit-actions">
+          <button class="btn-cancel" onclick="event.stopPropagation(); cancelarEdicionFicha(this)">Cancelar</button>
+          <button class="btn-save" onclick="event.stopPropagation(); guardarEdicionFicha(this)">Guardar cambios</button>
+        </div>
+        <div class="seguimiento">
+          <div class="seg-title">
+            Hilo de seguimiento
+          </div>
+          <div class="tl-items">
+            <div class="tl-item tl-foto">
+              <div class="tl-dot-wrap"><div class="tl-dot">📸</div></div>
+              <div class="tl-body">
+                <div class="tl-meta-row">
+                  <span class="tl-label">Foto / evidencia</span>
+                  <span class="tl-date-lbl">10 ene 2026</span>
+                  <span class="tl-item-actions">
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+                  </span>
+                </div>
+                <div class="tl-text-body">Fotos tomadas durante visita de inspección.</div>
+                <div class="tl-fotos">
+                  <div class="tl-foto-thumb" onclick="event.stopPropagation(); abrirLightbox('🧱')">🧱<button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>
+                  <div class="tl-foto-thumb" onclick="event.stopPropagation(); abrirLightbox('💧')">💧<button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>
+                  <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item tl-nota2">
+              <div class="tl-dot-wrap"><div class="tl-dot">📝</div></div>
+              <div class="tl-body">
+                <div class="tl-meta-row">
+                  <span class="tl-label">Nota</span>
+                  <span class="tl-date-lbl">10 ene 2026</span>
+                  <span class="tl-item-actions">
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+                  </span>
+                </div>
+                <div class="tl-text-body">Pendiente valorar si es filtración del piso superior o condensación. Contactar con la comunidad.</div>
+                <div class="tl-fotos">
+                  <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="add-seg-btn" onclick="toggleSegForm(event, this)">+ Añadir anotación</button>
+          <div class="seg-form">
+            <div class="seg-form-row">
+              <select>
+                <option>🔧 Intervención técnica</option>
+                <option>📞 Llamada</option>
+                <option>💶 Presupuesto recibido</option>
+                <option>📸 Foto / evidencia</option>
+                <option>✅ Cierre</option>
+                <option>📝 Nota</option>
+              </select>
+              <input type="date" />
+            </div>
+            <textarea placeholder="Describe la acción, llamada o evolución..."></textarea>
+            <div class="seg-fotos-row">
+              <button type="button" class="btn-add-foto" onclick="event.stopPropagation(); addFotoPreview(this)">📎 Añadir foto</button>
+              <div class="seg-fotos-preview"></div>
+            </div>
+            <div class="seg-form-actions">
+              <button class="btn-cancel" onclick="cerrarSegForm(event, this)">Cancelar</button>
+              <button class="btn-save" onclick="guardarSeg(event, this)">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENCIA 2 -->
+    <div class="incidencia-card" data-estado="en-curso" data-tipo="caldera" onclick="toggleDetalle(this)">
+      <div class="inc-header">
+        <div class="unidad-line">
+          <span class="unidad-code">ROS_1_4</span>
+          <span class="unidad-tenant">Marta Solé</span>
+          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
+        </div>
+        <div class="unidad-edit-form" onclick="event.stopPropagation()">
+          <input type="text" class="code-input" list="dl-unidades" value="ROS_1_4" oninput="autoFillUnidad(this)">
+          <input type="text" class="tenant-input" list="dl-arrendatarios" value="Marta Solé">
+          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
+        </div>
+        <div class="inc-header-row">
+          <div class="tipo-icon tipo-caldera">🔥</div>
+          <div class="inc-main">
+            <div class="inc-title">
+              <span class="titulo-texto">Caldera no enciende — fallo en encendido piezoeléctrico</span>
+              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
+            </div>
+            <div class="titulo-edit-form" onclick="event.stopPropagation()">
+              <input type="text" value="Caldera no enciende — fallo en encendido piezoeléctrico">
+              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
+            </div>
+            <div class="inc-meta">
+              <div class="meta-row">
+                <span class="meta-fecha">Abierta 3 feb 2026</span>
+                <span class="sep">·</span>
+                <span class="badge propietario pago-badge">Propietario</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-reparador">Gasterm Barcelona</span>
+              </div>
+              <div class="meta-row">
+                <span>🕐 135 días</span>
+                <span class="sep">·</span>
+                <span class="badge en-curso estado-badge">● En curso</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inc-detail">
+        <div class="detail-grid">
+          <div class="detail-col">
+            <div class="detail-section-title">
+              Datos de la incidencia
+              <button class="btn-editar-ficha" onclick="event.stopPropagation(); entrarEdicionFicha(this)">✎ Editar</button>
+            </div>
+            <div class="detail-fields">
+              <div class="detail-field">
+                <label>Descripción <button class="unidad-edit-btn" onclick="event.stopPropagation(); editarDescripcion(this)" title="Editar descripción">✎</button></label>
+                <div class="desc-edit-row">
+                  <div class="val">La caldera no enciende. El inquilino reporta que la luz piloto se apaga sola. Problema de encendido piezoeléctrico o válvula de gas.</div>
+                </div>
+                <textarea class="desc-textarea">La caldera no enciende. El inquilino reporta que la luz piloto se apaga sola. Problema de encendido piezoeléctrico o válvula de gas.</textarea>
+                <div class="desc-actions">
+                  <button class="btn-cancel" onclick="event.stopPropagation(); cancelarDescripcion(this)">Cancelar</button>
+                  <button class="btn-save" onclick="event.stopPropagation(); guardarDescripcion(this)">Guardar</button>
+                </div>
+              </div>
+              <div class="detail-field">
+                <label>Fecha apertura</label>
+                <div class="val">3 febrero 2026</div>
+                <input type="date" class="edit-input" data-field="fecha" data-saved="2026-02-03" value="2026-02-03">
+              </div>
+              <div class="detail-field">
+                <label>Tipo</label>
+                <div class="val">🔥 Caldera</div>
+                <select class="edit-input" data-field="tipo" data-saved="Caldera">
+                  <option>Humedades</option><option>Caldera</option><option>Electricidad</option>
+                  <option>Fontanería</option><option>Estructura</option><option>Electro.</option>
+                  <option>Cerrajería</option><option>Otro</option>
+                </select>
+              </div>
+              <div class="detail-field">
+                <label>¿Quién paga?</label>
+                <div class="val"><span class="badge propietario">Propietario</span></div>
+                <select class="edit-input" data-field="pago" data-saved="propietario">
+                  <option value="propietario">Propietario</option>
+                  <option value="inquilino">Inquilino</option>
+                  <option value="seguro">Seguro</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-section-title">Reparador</div>
+            <div class="detail-fields">
+              <div class="detail-field">
+                <label>Empresa</label>
+                <div class="val">Gasterm Barcelona S.L.</div>
+                <input type="text" class="edit-input" data-field="empresa" data-saved="Gasterm Barcelona S.L." value="Gasterm Barcelona S.L.">
+              </div>
+              <div class="detail-field">
+                <label>Teléfono</label>
+                <div class="val">93 412 87 65</div>
+                <input type="tel" class="edit-input" data-field="telefono" data-saved="93 412 87 65" value="93 412 87 65">
+              </div>
+              <div class="detail-field">
+                <label>Coste estimado</label>
+                <div class="val">280 – 350 €</div>
+                <input type="text" class="edit-input" data-field="coste" data-saved="280 – 350 €" value="280 – 350 €">
+              </div>
+              <div class="detail-field"><label>Estado</label>
+                <div class="estado-selector">
+                  <button class="estado-btn abierta" onclick="cambiarEstado(event, this, 'abierta')">Abierta</button>
+                  <button class="estado-btn en-curso active" onclick="cambiarEstado(event, this, 'en-curso')">En curso</button>
+                  <button class="estado-btn presupuesto" onclick="cambiarEstado(event, this, 'presupuesto')">Pdte. presupuesto</button>
+                  <button class="estado-btn resuelta" onclick="cambiarEstado(event, this, 'resuelta')">Resuelta</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ficha-edit-actions">
+          <button class="btn-cancel" onclick="event.stopPropagation(); cancelarEdicionFicha(this)">Cancelar</button>
+          <button class="btn-save" onclick="event.stopPropagation(); guardarEdicionFicha(this)">Guardar cambios</button>
+        </div>
+        <div class="seguimiento">
+          <div class="seg-title">Hilo de seguimiento</div>
+          <div class="tl-items">
+            <div class="tl-item tl-llamada2">
+              <div class="tl-dot-wrap"><div class="tl-dot">📞</div></div>
+              <div class="tl-body">
+                <div class="tl-meta-row">
+                  <span class="tl-label">Llamada</span><span class="tl-date-lbl">3 feb 2026</span>
+                  <span class="tl-item-actions">
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+                  </span>
+                </div>
+                <div class="tl-text-body">Inquilino reporta el problema. Sin agua caliente desde ayer. Contactado Gasterm para visita urgente.</div>
+                <div class="tl-fotos">
+                  <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item tl-intervencion">
+              <div class="tl-dot-wrap"><div class="tl-dot">🔧</div></div>
+              <div class="tl-body">
+                <div class="tl-meta-row">
+                  <span class="tl-label">Intervención técnica</span><span class="tl-date-lbl">5 feb 2026</span>
+                  <span class="tl-item-actions">
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+                  </span>
+                </div>
+                <div class="tl-text-body">Técnico de Gasterm visita el piso. Diagnóstico: válvula de gas deteriorada. Necesita pieza de repuesto. Plazo estimado 2 semanas.</div>
+                <div class="tl-fotos">
+                  <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item tl-presupuesto">
+              <div class="tl-dot-wrap"><div class="tl-dot">💶</div></div>
+              <div class="tl-body">
+                <div class="tl-meta-row">
+                  <span class="tl-label">Presupuesto recibido</span><span class="tl-date-lbl">6 feb 2026</span>
+                  <span class="tl-item-actions">
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+                  </span>
+                </div>
+                <div class="tl-text-body">Presupuesto recibido: 320 € (pieza + mano de obra). Aceptado. Pendiente confirmación fecha de reparación.</div>
+                <div class="tl-fotos">
+                  <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="add-seg-btn" onclick="toggleSegForm(event, this)">+ Añadir anotación</button>
+          <div class="seg-form">
+            <div class="seg-form-row">
+              <select>
+                <option>🔧 Intervención técnica</option>
+                <option>📞 Llamada</option>
+                <option>💶 Presupuesto recibido</option>
+                <option>📸 Foto / evidencia</option>
+                <option>✅ Cierre</option>
+                <option>📝 Nota</option>
+              </select>
+              <input type="date" />
+            </div>
+            <textarea placeholder="Describe la acción, llamada o evolución..."></textarea>
+            <div class="seg-fotos-row">
+              <button type="button" class="btn-add-foto" onclick="event.stopPropagation(); addFotoPreview(this)">📎 Añadir foto</button>
+              <div class="seg-fotos-preview"></div>
+            </div>
+            <div class="seg-form-actions">
+              <button class="btn-cancel" onclick="cerrarSegForm(event, this)">Cancelar</button>
+              <button class="btn-save" onclick="guardarSeg(event, this)">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENCIA 3 -->
+    <div class="incidencia-card" data-estado="presupuesto" data-tipo="electricidad" onclick="toggleDetalle(this)">
+      <div class="inc-header">
+        <div class="unidad-line">
+          <span class="unidad-code">BON_3_1</span>
+          <span class="unidad-tenant">Jordi Pla</span>
+          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
+        </div>
+        <div class="unidad-edit-form" onclick="event.stopPropagation()">
+          <input type="text" class="code-input" list="dl-unidades" value="BON_3_1" oninput="autoFillUnidad(this)">
+          <input type="text" class="tenant-input" list="dl-arrendatarios" value="Jordi Pla">
+          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
+        </div>
+        <div class="inc-header-row">
+          <div class="tipo-icon tipo-electricidad">⚡</div>
+          <div class="inc-main">
+            <div class="inc-title">
+              <span class="titulo-texto">Enchufes sin tensión en habitación principal</span>
+              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
+            </div>
+            <div class="titulo-edit-form" onclick="event.stopPropagation()">
+              <input type="text" value="Enchufes sin tensión en habitación principal">
+              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
+            </div>
+            <div class="inc-meta">
+              <div class="meta-row">
+                <span class="meta-fecha">Abierta 28 may 2026</span>
+                <span class="sep">·</span>
+                <span class="badge propietario pago-badge">Propietario</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-reparador">Elèctrica Eixample</span>
+              </div>
+              <div class="meta-row">
+                <span>🕐 21 días</span>
+                <span class="sep">·</span>
+                <span class="badge presupuesto estado-badge">● Pdte. presupuesto</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inc-detail">
+        <div class="detail-grid">
+          <div class="detail-col">
+            <div class="detail-section-title">
+              Datos de la incidencia
+              <button class="btn-editar-ficha" onclick="event.stopPropagation(); entrarEdicionFicha(this)">✎ Editar</button>
+            </div>
+            <div class="detail-fields">
+              <div class="detail-field">
+                <label>Descripción <button class="unidad-edit-btn" onclick="event.stopPropagation(); editarDescripcion(this)" title="Editar descripción">✎</button></label>
+                <div class="desc-edit-row">
+                  <div class="val">Tres enchufes de la habitación principal sin tensión. El diferencial no salta. Posible problema en el circuito derivado.</div>
+                </div>
+                <textarea class="desc-textarea">Tres enchufes de la habitación principal sin tensión. El diferencial no salta. Posible problema en el circuito derivado.</textarea>
+                <div class="desc-actions">
+                  <button class="btn-cancel" onclick="event.stopPropagation(); cancelarDescripcion(this)">Cancelar</button>
+                  <button class="btn-save" onclick="event.stopPropagation(); guardarDescripcion(this)">Guardar</button>
+                </div>
+              </div>
+              <div class="detail-field">
+                <label>Fecha apertura</label>
+                <div class="val">28 mayo 2026</div>
+                <input type="date" class="edit-input" data-field="fecha" data-saved="2026-05-28" value="2026-05-28">
+              </div>
+              <div class="detail-field">
+                <label>Tipo</label>
+                <div class="val">⚡ Electricidad</div>
+                <select class="edit-input" data-field="tipo" data-saved="Electricidad">
+                  <option>Humedades</option><option>Caldera</option><option>Electricidad</option>
+                  <option>Fontanería</option><option>Estructura</option><option>Electro.</option>
+                  <option>Cerrajería</option><option>Otro</option>
+                </select>
+              </div>
+              <div class="detail-field">
+                <label>¿Quién paga?</label>
+                <div class="val"><span class="badge propietario">Propietario</span></div>
+                <select class="edit-input" data-field="pago" data-saved="propietario">
+                  <option value="propietario">Propietario</option>
+                  <option value="inquilino">Inquilino</option>
+                  <option value="seguro">Seguro</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-section-title">Reparador</div>
+            <div class="detail-fields">
+              <div class="detail-field">
+                <label>Empresa</label>
+                <div class="val">Elèctrica Eixample</div>
+                <input type="text" class="edit-input" data-field="empresa" data-saved="Elèctrica Eixample" value="Elèctrica Eixample">
+              </div>
+              <div class="detail-field">
+                <label>Teléfono</label>
+                <div class="val">93 234 56 78</div>
+                <input type="tel" class="edit-input" data-field="telefono" data-saved="93 234 56 78" value="93 234 56 78">
+              </div>
+              <div class="detail-field"><label>Estado</label>
+                <div class="estado-selector">
+                  <button class="estado-btn abierta" onclick="cambiarEstado(event, this, 'abierta')">Abierta</button>
+                  <button class="estado-btn en-curso" onclick="cambiarEstado(event, this, 'en-curso')">En curso</button>
+                  <button class="estado-btn presupuesto active" onclick="cambiarEstado(event, this, 'presupuesto')">Pdte. presupuesto</button>
+                  <button class="estado-btn resuelta" onclick="cambiarEstado(event, this, 'resuelta')">Resuelta</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ficha-edit-actions">
+          <button class="btn-cancel" onclick="event.stopPropagation(); cancelarEdicionFicha(this)">Cancelar</button>
+          <button class="btn-save" onclick="event.stopPropagation(); guardarEdicionFicha(this)">Guardar cambios</button>
+        </div>
+        <div class="seguimiento">
+          <div class="seg-title">Hilo de seguimiento</div>
+          <div class="tl-items">
+            <div class="tl-item tl-intervencion">
+              <div class="tl-dot-wrap"><div class="tl-dot">🔧</div></div>
+              <div class="tl-body">
+                <div class="tl-meta-row">
+                  <span class="tl-label">Intervención técnica</span><span class="tl-date-lbl">30 may 2026</span>
+                  <span class="tl-item-actions">
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+                  </span>
+                </div>
+                <div class="tl-text-body">Electricista visita el piso. Detecta cable quemado en caja de derivación. Necesita rehacerse el tramo. Enviará presupuesto en 48h.</div>
+                <div class="tl-fotos">
+                  <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item tl-nota2">
+              <div class="tl-dot-wrap"><div class="tl-dot">📝</div></div>
+              <div class="tl-body">
+                <div class="tl-meta-row">
+                  <span class="tl-label">Nota</span><span class="tl-date-lbl">2 jun 2026</span>
+                  <span class="tl-item-actions">
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+                    <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+                  </span>
+                </div>
+                <div class="tl-text-body">Presupuesto recibido verbalmente: ~180 €. Pendiente recibir por escrito antes de autorizar.</div>
+                <div class="tl-fotos">
+                  <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="add-seg-btn" onclick="toggleSegForm(event, this)">+ Añadir anotación</button>
+          <div class="seg-form">
+            <div class="seg-form-row">
+              <select>
+                <option>🔧 Intervención técnica</option>
+                <option>📞 Llamada</option>
+                <option>💶 Presupuesto recibido</option>
+                <option>📸 Foto / evidencia</option>
+                <option>✅ Cierre</option>
+                <option>📝 Nota</option>
+              </select>
+              <input type="date" />
+            </div>
+            <textarea placeholder="Describe la acción, llamada o evolución..."></textarea>
+            <div class="seg-fotos-row">
+              <button type="button" class="btn-add-foto" onclick="event.stopPropagation(); addFotoPreview(this)">📎 Añadir foto</button>
+              <div class="seg-fotos-preview"></div>
+            </div>
+            <div class="seg-form-actions">
+              <button class="btn-cancel" onclick="cerrarSegForm(event, this)">Cancelar</button>
+              <button class="btn-save" onclick="guardarSeg(event, this)">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENCIA 4 - RESUELTA -->
+    <div class="incidencia-card" data-estado="resuelta" data-tipo="fontaneria" onclick="toggleDetalle(this)">
+      <div class="inc-header">
+        <div class="unidad-line">
+          <span class="unidad-code">RC5_2_3</span>
+          <span class="unidad-tenant">Laura Vidal</span>
+          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
+        </div>
+        <div class="unidad-edit-form" onclick="event.stopPropagation()">
+          <input type="text" class="code-input" list="dl-unidades" value="RC5_2_3" oninput="autoFillUnidad(this)">
+          <input type="text" class="tenant-input" list="dl-arrendatarios" value="Laura Vidal">
+          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
+        </div>
+        <div class="inc-header-row">
+          <div class="tipo-icon tipo-fontaneria">🚿</div>
+          <div class="inc-main">
+            <div class="inc-title">
+              <span class="titulo-texto">Grifo cocina con fuga — junta desgastada</span>
+              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
+            </div>
+            <div class="titulo-edit-form" onclick="event.stopPropagation()">
+              <input type="text" value="Grifo cocina con fuga — junta desgastada">
+              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
+            </div>
+            <div class="inc-meta">
+              <div class="meta-row">
+                <span class="meta-fecha">Resuelta 12 nov 2025</span>
+                <span class="sep">·</span>
+                <span class="badge inquilino-pay pago-badge">Inquilino</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-reparador">Fontanería Roca</span>
+              </div>
+              <div class="meta-row">
+                <span>✅ 85 € · 3 días</span>
+                <span class="sep">·</span>
+                <span class="badge resuelta estado-badge">● Resuelta</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENCIA 5 - RESUELTA -->
+    <div class="incidencia-card" data-estado="resuelta" data-tipo="cerrajeria" onclick="toggleDetalle(this)">
+      <div class="inc-header">
+        <div class="unidad-line">
+          <span class="unidad-code">PALL_1_1</span>
+          <span class="unidad-tenant">Portal — zona común</span>
+          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
+        </div>
+        <div class="unidad-edit-form" onclick="event.stopPropagation()">
+          <input type="text" class="code-input" list="dl-unidades" value="PALL_1_1" oninput="autoFillUnidad(this)">
+          <input type="text" class="tenant-input" list="dl-arrendatarios" value="Portal — zona común">
+          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
+        </div>
+        <div class="inc-header-row">
+          <div class="tipo-icon tipo-cerrajeria">🔑</div>
+          <div class="inc-main">
+            <div class="inc-title">
+              <span class="titulo-texto">Llave rota en cerradura portal — cambio bombín</span>
+              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
+            </div>
+            <div class="titulo-edit-form" onclick="event.stopPropagation()">
+              <input type="text" value="Llave rota en cerradura portal — cambio bombín">
+              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
+            </div>
+            <div class="inc-meta">
+              <div class="meta-row">
+                <span class="meta-fecha">Resuelta 4 sep 2025</span>
+                <span class="sep">·</span>
+                <span class="badge propietario pago-badge">Propietario</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-reparador">Cerrajería 24h</span>
+              </div>
+              <div class="meta-row">
+                <span>✅ 120 € · 1 día</span>
+                <span class="sep">·</span>
+                <span class="badge resuelta estado-badge">● Resuelta</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /lista -->
+
+</main>
+
+<!-- MODAL NUEVA INCIDENCIA -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Nueva incidencia</h2>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-row-2 unidad-row">
+        <div class="form-group">
+          <label>Unidad (Ref_UA)</label>
+          <input type="text" id="nueva-unidad-code" list="dl-unidades" placeholder="Ej: ROS_1_2" oninput="autoFillUnidad(this)">
+        </div>
+        <div class="form-group">
+          <label>Arrendatario</label>
+          <input type="text" id="nueva-unidad-tenant" list="dl-arrendatarios" placeholder="Nombre del arrendatario">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Tipo de incidencia</label>
+        <div class="tipo-picker">
+          <button class="tipo-pick-btn selected" onclick="selTipo(this)"><span class="emoji">💧</span>Humedades</button>
+          <button class="tipo-pick-btn" onclick="selTipo(this)"><span class="emoji">🔥</span>Caldera</button>
+          <button class="tipo-pick-btn" onclick="selTipo(this)"><span class="emoji">⚡</span>Electricidad</button>
+          <button class="tipo-pick-btn" onclick="selTipo(this)"><span class="emoji">🚿</span>Fontanería</button>
+          <button class="tipo-pick-btn" onclick="selTipo(this)"><span class="emoji">🏗</span>Estructura</button>
+          <button class="tipo-pick-btn" onclick="selTipo(this)"><span class="emoji">🫙</span>Electro.</button>
+          <button class="tipo-pick-btn" onclick="selTipo(this)"><span class="emoji">🔑</span>Cerrajería</button>
+          <button class="tipo-pick-btn" onclick="selTipo(this)"><span class="emoji">📦</span>Otro</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Título breve</label>
+        <input type="text" id="nueva-titulo" placeholder="Ej: Grifo cocina con fuga" />
+      </div>
+
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea id="nueva-desc" placeholder="Describe el problema con detalle..."></textarea>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Fecha de apertura</label>
+          <input type="date" id="nueva-fecha" />
+        </div>
+        <div class="form-group">
+          <label>¿Quién paga?</label>
+          <select id="nueva-pago">
+            <option value="propietario">Propietario</option>
+            <option value="inquilino">Inquilino</option>
+            <option value="seguro">Seguro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Reparador / Empresa</label>
+          <input type="text" id="nueva-reparador" placeholder="Nombre o empresa" />
+        </div>
+        <div class="form-group">
+          <label>Teléfono reparador</label>
+          <input type="tel" id="nueva-tel" placeholder="93 000 00 00" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Adjuntar foto o documento</label>
+        <div class="upload-zone" onclick="alert('En la versión real sube directamente a OneDrive')">
+          <div class="icon">📎</div>
+          <p>Toca para adjuntar foto o PDF<br><small>Se guardará en la carpeta del inquilino en OneDrive</small></p>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-save" onclick="crearIncidencia()">Crear incidencia</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sugerencias combo unidad/arrendatario — datos reales de BBDD_Incidencias.xlsx (129 unidades) -->
+<datalist id="dl-unidades">
+  <option value="ROS_0_2B-izda" label="Jose Walter Valencia García"></option>
+  <option value="ROS_0_1dda" label="Vannessa Pena"></option>
+  <option value="ROS_0_2B-dda" label="VACY"></option>
+  <option value="ROS_0_2izda" label="Di Zhang"></option>
+  <option value="ROS_0_3" label="Delia Antonia Gorski Lavié de Silveira"></option>
+  <option value="ROS_EN_1" label="Astte López, Margot"></option>
+  <option value="ROS_EN_2" label="Kabita Lamichhane"></option>
+  <option value="ROS_EN_3" label="Maria Aleida Hurtado"></option>
+  <option value="ROS_EN_4" label="Claudio Silveira Silva"></option>
+  <option value="ROS_PR_1" label="Juliana Almeida Cobo"></option>
+  <option value="ROS_PR_2" label="Zahid Naseem Begum"></option>
+  <option value="ROS_PR_3" label="VACY"></option>
+  <option value="ROS_PR_4" label="VACY"></option>
+  <option value="ROS_1_1" label="Mathias Graf"></option>
+  <option value="ROS_1_2" label="Narciso Artasona Monfá"></option>
+  <option value="ROS_1_3" label="Ana Sofia Soffe Calabozo y Bart Da Conciçao Maqrques Dos Santos"></option>
+  <option value="ROS_1_4" label="Daniel Mercerreys Nebreda"></option>
+  <option value="ROS_2_1" label="Carlos López Garcia"></option>
+  <option value="ROS_2_2" label="Javier Bonet Garcia"></option>
+  <option value="ROS_2_3" label="Antoine Alexis Gardes"></option>
+  <option value="ROS_2_4" label="VACY"></option>
+  <option value="ROS_3_1" label="Maria Dolores Diaz Gonzalez"></option>
+  <option value="ROS_3_2" label="Marina Farguell Sales"></option>
+  <option value="ROS_3_3" label="VACY"></option>
+  <option value="ROS_3_4" label="Esther Gregorio Riba"></option>
+  <option value="ROS_4_1" label="Lelia Fabiola Mondillo"></option>
+  <option value="ROS_4_2" label="Barbara Luisa Guimeraes Alves de Sousa"></option>
+  <option value="ROS_4_3" label="Eduardo Bertolin Muñoz"></option>
+  <option value="ROS_4_4" label="Isabel Tormo Pelegrin"></option>
+  <option value="ROS_5_1" label="Maria Jesús Ruiz Gallego"></option>
+  <option value="ROS_5_2" label="Maria Laura Bonello"></option>
+  <option value="ROS_5_3" label="Maria Sol Daniela Noya y Fernanda Mosquera Rozo"></option>
+  <option value="ROS_5_4" label="Ramon Codina Fossas"></option>
+  <option value="BON_0_1_2" label="Maria Jose Torres Carvajal"></option>
+  <option value="BON_0_3" label="VACY (FERRETERIA)"></option>
+  <option value="BON_PR_1" label="VACY (antes vivienda de ferreteria)"></option>
+  <option value="BON_PR_2" label="VACY"></option>
+  <option value="BON_PR_3" label="Javier Vilarrubia Llopis/Franziska balzer"></option>
+  <option value="BON_PR_4" label="VACY"></option>
+  <option value="BON_1_1" label="INTERNATIONAL AMERICAN SCHOOL EDUCATION, SL"></option>
+  <option value="BON_1_2" label="Maria Teresa Rey del Hoyo"></option>
+  <option value="BON_1_3" label="Miguela Campos Brun"></option>
+  <option value="BON_1_4" label="VACY"></option>
+  <option value="BON_2_1" label="Armonia Rodriguez Rodrigues"></option>
+  <option value="BON_2_2" label="Sandra Margarida Moura da Cruz y Juan March Berlinches"></option>
+  <option value="BON_2_3" label="Andreu Agustín Andrés"></option>
+  <option value="BON_2_4" label="Chloe Emma Charlotte Lagrue"></option>
+  <option value="BON_3_1" label="VACY"></option>
+  <option value="BON_3_2A" label="VACY"></option>
+  <option value="BON_3_2B" label="Francisco Javier Gimeno-Bayon Forteza"></option>
+  <option value="BON_3_3" label="Magdalena Ouro Cajide"></option>
+  <option value="BON_3_4" label="VACY"></option>
+  <option value="SAN_PB_1" label="Cervesera Artesana SLU"></option>
+  <option value="SAN_PB_2" label="Un Taller SCP"></option>
+  <option value="SAN_PB_3" label="Prosound Technica, SL"></option>
+  <option value="SAN_PB_4,5,6" label="VACY"></option>
+  <option value="SAN_PB_7" label="VACY"></option>
+  <option value="SAN_Altillo_8" label="Seix Anglada SL"></option>
+  <option value="SAN_1_A" label="VACY"></option>
+  <option value="SAN_1_B" label="Estigma Edicions SL"></option>
+  <option value="SAN_1_C" label="VACY"></option>
+  <option value="SAN_1_D" label="Vanesa Almar Llobet"></option>
+  <option value="SAN_1_E" label="VACY"></option>
+  <option value="SAN_1_F" label="BO1 Estudi d&#x27;Arquitectes, SLP"></option>
+  <option value="SAN_2_A" label="Amalgama Studio SL"></option>
+  <option value="SAN_2_B" label="VACY"></option>
+  <option value="SAN_2_C" label="Estudio Bendita Gloria SL"></option>
+  <option value="SAN_2_D" label="Vent de tramuntana i mestral, S.L."></option>
+  <option value="SAN_3_A" label="Leonardo Jesús Enrique Garcia Mendez"></option>
+  <option value="SAN_3_B" label="VACY"></option>
+  <option value="SAN_3_C" label="Camille Rose Claude Vannier"></option>
+  <option value="SAN_3_D" label="Caterina Barjau Dachs"></option>
+  <option value="SAN_3_E" label="David Borrull Carreras y Isabel Graña Muñoz"></option>
+  <option value="SAN_4_1" label="VACY"></option>
+  <option value="SAN_4_2" label="Marta Prat de la Riba Ayma"></option>
+  <option value="SEP_0_1" label="LiFang Qiu"></option>
+  <option value="SEP_0_2" label="VACY"></option>
+  <option value="SEP_PR_1" label="Flora Fano Orizano"></option>
+  <option value="SEP_PR_2" label="Monica Norma Zumba Saquipai"></option>
+  <option value="SEP_1_1" label="Juan Tomillero Durán"></option>
+  <option value="SEP_1_2" label="Luis Aurelio Salas Padilla"></option>
+  <option value="SEP_2_1" label="Pilar Puig Sanglas"></option>
+  <option value="SEP_2_2" label="Hassan Hamza"></option>
+  <option value="SEP_3_1" label="Mauricio Andres Vargas Tierradentro / Angela Rocio Sanchez Conde"></option>
+  <option value="SEP_3_2" label="VACY"></option>
+  <option value="SEP_4_1" label="VACY"></option>
+  <option value="SEP_4_2" label="VACY"></option>
+  <option value="SEP_5_1" label="VACY"></option>
+  <option value="SEP_5_2" label="VACY"></option>
+  <option value="RC3_0_1" label="VACY"></option>
+  <option value="RC3_0_2" label="Sandra Iserte Serrano"></option>
+  <option value="RC3_PR_1" label="Ramiro Claudio Ponce"></option>
+  <option value="RC3_PR_2" label="Sujerin Maria Feliz Jimenez"></option>
+  <option value="RC3_1_1" label="VACY"></option>
+  <option value="RC3_1_2" label="Giovanna Pozo Guzman"></option>
+  <option value="RC3_2_1" label="Ernesto Cuba Flores"></option>
+  <option value="RC3_2_2" label="Asunción Alcaraz Boro"></option>
+  <option value="RC3_3_1" label="Adolfo Roca Escalante"></option>
+  <option value="RC3_3_2" label="Jessica Viviana Delgado"></option>
+  <option value="RC5_0_1" label="VACY"></option>
+  <option value="RC5_0_2" label="Ramón Royo Font"></option>
+  <option value="RC5_PR_1" label="Mauricio Andres Vargas Tierradentro"></option>
+  <option value="RC5_PR_2" label="Rosario Turigas Gabarro"></option>
+  <option value="RC5_1_1" label="Manuel Perez Cruz"></option>
+  <option value="RC5_1_2" label="Martha Marina Claros Ferrel"></option>
+  <option value="RC5_2_1" label="Rosa Aranibar Rojas"></option>
+  <option value="RC5_2_2" label="VACY"></option>
+  <option value="RC5_3_1" label="Juana Solé Alcaraz"></option>
+  <option value="RC5_3_2" label="Deny Arce Vespa"></option>
+  <option value="RC7_0_1" label="VACY"></option>
+  <option value="RC7_PR_1" label="Mercedes Adriana Choque Rojas"></option>
+  <option value="RC7_1_1" label="Aldo Chelton Valencia Alvarez"></option>
+  <option value="RC7_2_1" label="Ali  QamaryTauqeer"></option>
+  <option value="RC7_3_1" label="Dolores Benages"></option>
+  <option value="RC7_4_1" label="Rosa Vazquez Espinoza"></option>
+  <option value="SEP_6_1" label="VACY"></option>
+  <option value="PALL" label="Miguel Cardenas Galan"></option>
+  <option value="PALL" label="Manuel del Rosal Ortiz"></option>
+  <option value="PALL" label="Juan Morales Martín,"></option>
+  <option value="PALL" label="Ayuntamiento Pallejà"></option>
+  <option value="PALL" label="Christopher Arrué Barragan"></option>
+  <option value="ROS_GEN"></option>
+  <option value="SEP_GEN"></option>
+  <option value="SAN_GEN"></option>
+  <option value="BON_GEN"></option>
+  <option value="RC3_GEN"></option>
+  <option value="RC5_GEN"></option>
+  <option value="RC7_GEN"></option>
+  <option value="PALL_GEN"></option>
+</datalist>
+<datalist id="dl-arrendatarios">
+  <option value="Jose Walter Valencia García"></option>
+  <option value="Vannessa Pena"></option>
+  <option value="VACY"></option>
+  <option value="Di Zhang"></option>
+  <option value="Delia Antonia Gorski Lavié de Silveira"></option>
+  <option value="Astte López, Margot"></option>
+  <option value="Kabita Lamichhane"></option>
+  <option value="Maria Aleida Hurtado"></option>
+  <option value="Claudio Silveira Silva"></option>
+  <option value="Juliana Almeida Cobo"></option>
+  <option value="Zahid Naseem Begum"></option>
+  <option value="Mathias Graf"></option>
+  <option value="Narciso Artasona Monfá"></option>
+  <option value="Ana Sofia Soffe Calabozo y Bart Da Conciçao Maqrques Dos Santos"></option>
+  <option value="Daniel Mercerreys Nebreda"></option>
+  <option value="Carlos López Garcia"></option>
+  <option value="Javier Bonet Garcia"></option>
+  <option value="Antoine Alexis Gardes"></option>
+  <option value="Maria Dolores Diaz Gonzalez"></option>
+  <option value="Marina Farguell Sales"></option>
+  <option value="Esther Gregorio Riba"></option>
+  <option value="Lelia Fabiola Mondillo"></option>
+  <option value="Barbara Luisa Guimeraes Alves de Sousa"></option>
+  <option value="Eduardo Bertolin Muñoz"></option>
+  <option value="Isabel Tormo Pelegrin"></option>
+  <option value="Maria Jesús Ruiz Gallego"></option>
+  <option value="Maria Laura Bonello"></option>
+  <option value="Maria Sol Daniela Noya y Fernanda Mosquera Rozo"></option>
+  <option value="Ramon Codina Fossas"></option>
+  <option value="Maria Jose Torres Carvajal"></option>
+  <option value="VACY (FERRETERIA)"></option>
+  <option value="VACY (antes vivienda de ferreteria)"></option>
+  <option value="Javier Vilarrubia Llopis/Franziska balzer"></option>
+  <option value="INTERNATIONAL AMERICAN SCHOOL EDUCATION, SL"></option>
+  <option value="Maria Teresa Rey del Hoyo"></option>
+  <option value="Miguela Campos Brun"></option>
+  <option value="Armonia Rodriguez Rodrigues"></option>
+  <option value="Sandra Margarida Moura da Cruz y Juan March Berlinches"></option>
+  <option value="Andreu Agustín Andrés"></option>
+  <option value="Chloe Emma Charlotte Lagrue"></option>
+  <option value="Francisco Javier Gimeno-Bayon Forteza"></option>
+  <option value="Magdalena Ouro Cajide"></option>
+  <option value="Cervesera Artesana SLU"></option>
+  <option value="Un Taller SCP"></option>
+  <option value="Prosound Technica, SL"></option>
+  <option value="Seix Anglada SL"></option>
+  <option value="Estigma Edicions SL"></option>
+  <option value="Vanesa Almar Llobet"></option>
+  <option value="BO1 Estudi d&#x27;Arquitectes, SLP"></option>
+  <option value="Amalgama Studio SL"></option>
+  <option value="Estudio Bendita Gloria SL"></option>
+  <option value="Vent de tramuntana i mestral, S.L."></option>
+  <option value="Leonardo Jesús Enrique Garcia Mendez"></option>
+  <option value="Camille Rose Claude Vannier"></option>
+  <option value="Caterina Barjau Dachs"></option>
+  <option value="David Borrull Carreras y Isabel Graña Muñoz"></option>
+  <option value="Marta Prat de la Riba Ayma"></option>
+  <option value="LiFang Qiu"></option>
+  <option value="Flora Fano Orizano"></option>
+  <option value="Monica Norma Zumba Saquipai"></option>
+  <option value="Juan Tomillero Durán"></option>
+  <option value="Luis Aurelio Salas Padilla"></option>
+  <option value="Pilar Puig Sanglas"></option>
+  <option value="Hassan Hamza"></option>
+  <option value="Mauricio Andres Vargas Tierradentro / Angela Rocio Sanchez Conde"></option>
+  <option value="Sandra Iserte Serrano"></option>
+  <option value="Ramiro Claudio Ponce"></option>
+  <option value="Sujerin Maria Feliz Jimenez"></option>
+  <option value="Giovanna Pozo Guzman"></option>
+  <option value="Ernesto Cuba Flores"></option>
+  <option value="Asunción Alcaraz Boro"></option>
+  <option value="Adolfo Roca Escalante"></option>
+  <option value="Jessica Viviana Delgado"></option>
+  <option value="Ramón Royo Font"></option>
+  <option value="Mauricio Andres Vargas Tierradentro"></option>
+  <option value="Rosario Turigas Gabarro"></option>
+  <option value="Manuel Perez Cruz"></option>
+  <option value="Martha Marina Claros Ferrel"></option>
+  <option value="Rosa Aranibar Rojas"></option>
+  <option value="Juana Solé Alcaraz"></option>
+  <option value="Deny Arce Vespa"></option>
+  <option value="Mercedes Adriana Choque Rojas"></option>
+  <option value="Aldo Chelton Valencia Alvarez"></option>
+  <option value="Ali  QamaryTauqeer"></option>
+  <option value="Dolores Benages"></option>
+  <option value="Rosa Vazquez Espinoza"></option>
+  <option value="Miguel Cardenas Galan"></option>
+  <option value="Manuel del Rosal Ortiz"></option>
+  <option value="Juan Morales Martín,"></option>
+  <option value="Ayuntamiento Pallejà"></option>
+  <option value="Christopher Arrué Barragan"></option>
+</datalist>
+
+<!-- LIGHTBOX -->
+<div class="lightbox-overlay" id="lightbox" onclick="cerrarLightbox()">
+  <button class="lightbox-close" onclick="event.stopPropagation(); cerrarLightbox()">✕</button>
+  <div class="lightbox-content" id="lightbox-content"></div>
+</div>
+
+<script>
+  // Base de datos de unidades/arrendatarios — exportada de BBDD_Incidencias.xlsx (129 unidades)
+  const unidadesDB = [{"code": "ROS_0_2B-izda", "tenant": "Jose Walter Valencia García"}, {"code": "ROS_0_1dda", "tenant": "Vannessa Pena"}, {"code": "ROS_0_2B-dda", "tenant": "VACY"}, {"code": "ROS_0_2izda", "tenant": "Di Zhang"}, {"code": "ROS_0_3", "tenant": "Delia Antonia Gorski Lavié de Silveira"}, {"code": "ROS_EN_1", "tenant": "Astte López, Margot"}, {"code": "ROS_EN_2", "tenant": "Kabita Lamichhane"}, {"code": "ROS_EN_3", "tenant": "Maria Aleida Hurtado"}, {"code": "ROS_EN_4", "tenant": "Claudio Silveira Silva"}, {"code": "ROS_PR_1", "tenant": "Juliana Almeida Cobo"}, {"code": "ROS_PR_2", "tenant": "Zahid Naseem Begum"}, {"code": "ROS_PR_3", "tenant": "VACY"}, {"code": "ROS_PR_4", "tenant": "VACY"}, {"code": "ROS_1_1", "tenant": "Mathias Graf"}, {"code": "ROS_1_2", "tenant": "Narciso Artasona Monfá"}, {"code": "ROS_1_3", "tenant": "Ana Sofia Soffe Calabozo y Bart Da Conciçao Maqrques Dos Santos"}, {"code": "ROS_1_4", "tenant": "Daniel Mercerreys Nebreda"}, {"code": "ROS_2_1", "tenant": "Carlos López Garcia"}, {"code": "ROS_2_2", "tenant": "Javier Bonet Garcia"}, {"code": "ROS_2_3", "tenant": "Antoine Alexis Gardes"}, {"code": "ROS_2_4", "tenant": "VACY"}, {"code": "ROS_3_1", "tenant": "Maria Dolores Diaz Gonzalez"}, {"code": "ROS_3_2", "tenant": "Marina Farguell Sales"}, {"code": "ROS_3_3", "tenant": "VACY"}, {"code": "ROS_3_4", "tenant": "Esther Gregorio Riba"}, {"code": "ROS_4_1", "tenant": "Lelia Fabiola Mondillo"}, {"code": "ROS_4_2", "tenant": "Barbara Luisa Guimeraes Alves de Sousa"}, {"code": "ROS_4_3", "tenant": "Eduardo Bertolin Muñoz"}, {"code": "ROS_4_4", "tenant": "Isabel Tormo Pelegrin"}, {"code": "ROS_5_1", "tenant": "Maria Jesús Ruiz Gallego"}, {"code": "ROS_5_2", "tenant": "Maria Laura Bonello"}, {"code": "ROS_5_3", "tenant": "Maria Sol Daniela Noya y Fernanda Mosquera Rozo"}, {"code": "ROS_5_4", "tenant": "Ramon Codina Fossas"}, {"code": "BON_0_1_2", "tenant": "Maria Jose Torres Carvajal"}, {"code": "BON_0_3", "tenant": "VACY (FERRETERIA)"}, {"code": "BON_PR_1", "tenant": "VACY (antes vivienda de ferreteria)"}, {"code": "BON_PR_2", "tenant": "VACY"}, {"code": "BON_PR_3", "tenant": "Javier Vilarrubia Llopis/Franziska balzer"}, {"code": "BON_PR_4", "tenant": "VACY"}, {"code": "BON_1_1", "tenant": "INTERNATIONAL AMERICAN SCHOOL EDUCATION, SL"}, {"code": "BON_1_2", "tenant": "Maria Teresa Rey del Hoyo"}, {"code": "BON_1_3", "tenant": "Miguela Campos Brun"}, {"code": "BON_1_4", "tenant": "VACY"}, {"code": "BON_2_1", "tenant": "Armonia Rodriguez Rodrigues"}, {"code": "BON_2_2", "tenant": "Sandra Margarida Moura da Cruz y Juan March Berlinches"}, {"code": "BON_2_3", "tenant": "Andreu Agustín Andrés"}, {"code": "BON_2_4", "tenant": "Chloe Emma Charlotte Lagrue"}, {"code": "BON_3_1", "tenant": "VACY"}, {"code": "BON_3_2A", "tenant": "VACY"}, {"code": "BON_3_2B", "tenant": "Francisco Javier Gimeno-Bayon Forteza"}, {"code": "BON_3_3", "tenant": "Magdalena Ouro Cajide"}, {"code": "BON_3_4", "tenant": "VACY"}, {"code": "SAN_PB_1", "tenant": "Cervesera Artesana SLU"}, {"code": "SAN_PB_2", "tenant": "Un Taller SCP"}, {"code": "SAN_PB_3", "tenant": "Prosound Technica, SL"}, {"code": "SAN_PB_4,5,6", "tenant": "VACY"}, {"code": "SAN_PB_7", "tenant": "VACY"}, {"code": "SAN_Altillo_8", "tenant": "Seix Anglada SL"}, {"code": "SAN_1_A", "tenant": "VACY"}, {"code": "SAN_1_B", "tenant": "Estigma Edicions SL"}, {"code": "SAN_1_C", "tenant": "VACY"}, {"code": "SAN_1_D", "tenant": "Vanesa Almar Llobet"}, {"code": "SAN_1_E", "tenant": "VACY"}, {"code": "SAN_1_F", "tenant": "BO1 Estudi d'Arquitectes, SLP"}, {"code": "SAN_2_A", "tenant": "Amalgama Studio SL"}, {"code": "SAN_2_B", "tenant": "VACY"}, {"code": "SAN_2_C", "tenant": "Estudio Bendita Gloria SL"}, {"code": "SAN_2_D", "tenant": "Vent de tramuntana i mestral, S.L."}, {"code": "SAN_3_A", "tenant": "Leonardo Jesús Enrique Garcia Mendez"}, {"code": "SAN_3_B", "tenant": "VACY"}, {"code": "SAN_3_C", "tenant": "Camille Rose Claude Vannier"}, {"code": "SAN_3_D", "tenant": "Caterina Barjau Dachs"}, {"code": "SAN_3_E", "tenant": "David Borrull Carreras y Isabel Graña Muñoz"}, {"code": "SAN_4_1", "tenant": "VACY"}, {"code": "SAN_4_2", "tenant": "Marta Prat de la Riba Ayma"}, {"code": "SEP_0_1", "tenant": "LiFang Qiu"}, {"code": "SEP_0_2", "tenant": "VACY"}, {"code": "SEP_PR_1", "tenant": "Flora Fano Orizano"}, {"code": "SEP_PR_2", "tenant": "Monica Norma Zumba Saquipai"}, {"code": "SEP_1_1", "tenant": "Juan Tomillero Durán"}, {"code": "SEP_1_2", "tenant": "Luis Aurelio Salas Padilla"}, {"code": "SEP_2_1", "tenant": "Pilar Puig Sanglas"}, {"code": "SEP_2_2", "tenant": "Hassan Hamza"}, {"code": "SEP_3_1", "tenant": "Mauricio Andres Vargas Tierradentro / Angela Rocio Sanchez Conde"}, {"code": "SEP_3_2", "tenant": "VACY"}, {"code": "SEP_4_1", "tenant": "VACY"}, {"code": "SEP_4_2", "tenant": "VACY"}, {"code": "SEP_5_1", "tenant": "VACY"}, {"code": "SEP_5_2", "tenant": "VACY"}, {"code": "RC3_0_1", "tenant": "VACY"}, {"code": "RC3_0_2", "tenant": "Sandra Iserte Serrano"}, {"code": "RC3_PR_1", "tenant": "Ramiro Claudio Ponce"}, {"code": "RC3_PR_2", "tenant": "Sujerin Maria Feliz Jimenez"}, {"code": "RC3_1_1", "tenant": "VACY"}, {"code": "RC3_1_2", "tenant": "Giovanna Pozo Guzman"}, {"code": "RC3_2_1", "tenant": "Ernesto Cuba Flores"}, {"code": "RC3_2_2", "tenant": "Asunción Alcaraz Boro"}, {"code": "RC3_3_1", "tenant": "Adolfo Roca Escalante"}, {"code": "RC3_3_2", "tenant": "Jessica Viviana Delgado"}, {"code": "RC5_0_1", "tenant": "VACY"}, {"code": "RC5_0_2", "tenant": "Ramón Royo Font"}, {"code": "RC5_PR_1", "tenant": "Mauricio Andres Vargas Tierradentro"}, {"code": "RC5_PR_2", "tenant": "Rosario Turigas Gabarro"}, {"code": "RC5_1_1", "tenant": "Manuel Perez Cruz"}, {"code": "RC5_1_2", "tenant": "Martha Marina Claros Ferrel"}, {"code": "RC5_2_1", "tenant": "Rosa Aranibar Rojas"}, {"code": "RC5_2_2", "tenant": "VACY"}, {"code": "RC5_3_1", "tenant": "Juana Solé Alcaraz"}, {"code": "RC5_3_2", "tenant": "Deny Arce Vespa"}, {"code": "RC7_0_1", "tenant": "VACY"}, {"code": "RC7_PR_1", "tenant": "Mercedes Adriana Choque Rojas"}, {"code": "RC7_1_1", "tenant": "Aldo Chelton Valencia Alvarez"}, {"code": "RC7_2_1", "tenant": "Ali  QamaryTauqeer"}, {"code": "RC7_3_1", "tenant": "Dolores Benages"}, {"code": "RC7_4_1", "tenant": "Rosa Vazquez Espinoza"}, {"code": "SEP_6_1", "tenant": "VACY"}, {"code": "PALL", "tenant": "Miguel Cardenas Galan"}, {"code": "PALL", "tenant": "Manuel del Rosal Ortiz"}, {"code": "PALL", "tenant": "Juan Morales Martín,"}, {"code": "PALL", "tenant": "Ayuntamiento Pallejà"}, {"code": "PALL", "tenant": "Christopher Arrué Barragan"}, {"code": "ROS_GEN", "tenant": ""}, {"code": "SEP_GEN", "tenant": ""}, {"code": "SAN_GEN", "tenant": ""}, {"code": "BON_GEN", "tenant": ""}, {"code": "RC3_GEN", "tenant": ""}, {"code": "RC5_GEN", "tenant": ""}, {"code": "RC7_GEN", "tenant": ""}, {"code": "PALL_GEN", "tenant": ""}];
+  const unidadesPorCodigo = unidadesDB.reduce((acc, u) => {
+    if (!acc[u.code]) acc[u.code] = [];
+    acc[u.code].push(u.tenant || '');
+    return acc;
+  }, {});
+
+  function autoFillUnidad(codeInput) {
+    const tenants = unidadesPorCodigo[codeInput.value.trim()];
+    if (!tenants || tenants.length !== 1) return;
+    const tenantInput = codeInput.closest('.unidad-edit-form, .form-row-2')?.querySelector('.tenant-input, #nueva-unidad-tenant');
+    if (tenantInput) tenantInput.value = tenants[0] || 'Sin asignar';
+  }
+
+  // Fecha por defecto
+  document.getElementById('nueva-fecha').valueAsDate = new Date();
+
+  // Toggle detalle
+  function toggleDetalle(card) {
+    const det = card.querySelector('.inc-detail');
+    if (!det) return;
+    const open = det.classList.toggle('visible');
+    card.classList.toggle('expanded', open);
+  }
+
+  // Estado
+  function cambiarEstado(e, btn, estado) {
+    e.stopPropagation();
+    const card = btn.closest('.incidencia-card');
+    btn.closest('.estado-selector').querySelectorAll('.estado-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    card.dataset.estado = estado;
+    // Update badge
+    const badge = card.querySelector('.estado-badge');
+    badge.className = 'badge estado-badge ' + estado;
+    const labels = { abierta:'● Abierta', 'en-curso':'● En curso', presupuesto:'● Pdte. presupuesto', resuelta:'● Resuelta' };
+    badge.textContent = labels[estado] || estado;
+    actualizarStats();
+  }
+
+  function actualizarStats() {
+    const cards = document.querySelectorAll('.incidencia-card');
+    const counts = { abierta:0, 'en-curso':0, presupuesto:0, resuelta:0 };
+    cards.forEach(c => { if (counts[c.dataset.estado] !== undefined) counts[c.dataset.estado]++; });
+    document.getElementById('n-abierta').textContent     = counts['abierta'];
+    document.getElementById('n-curso').textContent       = counts['en-curso'];
+    document.getElementById('n-presupuesto').textContent = counts['presupuesto'];
+    document.getElementById('n-resuelta').textContent    = counts['resuelta'];
+  }
+
+  // Filtro
+  function normalizar(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  }
+  function filtrar() {
+    const estado = document.querySelectorAll('.filter-select')[0].value;
+    const tipo   = document.getElementById('filtro-tipo').value;
+    const q = normalizar(document.getElementById('buscador').value);
+    document.querySelectorAll('.incidencia-card').forEach(c => {
+      const eOk = estado === 'todas' || c.dataset.estado === estado;
+      const tOk = tipo   === 'todas' || c.dataset.tipo   === tipo;
+      let qOk = true;
+      if (q) {
+        const code   = normalizar(c.querySelector('.unidad-code')?.textContent);
+        const tenant = normalizar(c.querySelector('.unidad-tenant')?.textContent);
+        qOk = code.includes(q) || tenant.includes(q);
+      }
+      c.style.display = eOk && tOk && qOk ? '' : 'none';
+    });
+  }
+
+  // Tipo picker modal
+  function selTipo(btn) {
+    btn.closest('.tipo-picker').querySelectorAll('.tipo-pick-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  // Modal
+  function abrirModal() { document.getElementById('modal').classList.add('visible'); }
+  function cerrarModal() { document.getElementById('modal').classList.remove('visible'); }
+
+  // Tipo emojis
+  const tipoData = {
+    'Humedades':    { emoji:'💧', cls:'humedades' },
+    'Caldera':      { emoji:'🔥', cls:'caldera' },
+    'Electricidad': { emoji:'⚡', cls:'electricidad' },
+    'Fontanería':   { emoji:'🚿', cls:'fontaneria' },
+    'Estructura':   { emoji:'🏗', cls:'estructura' },
+    'Electro.':     { emoji:'🫙', cls:'electrodomestico' },
+    'Cerrajería':   { emoji:'🔑', cls:'cerrajeria' },
+    'Otro':         { emoji:'📦', cls:'otro' },
+  };
+
+  // ── Unidad / arrendatario editable ──
+  // ── Edición completa de la ficha (Datos de la incidencia + Reparador) ──
+  function entrarEdicionFicha(btn) {
+    const detail = btn.closest('.inc-detail');
+    const grid   = detail.querySelector('.detail-grid');
+    grid.querySelectorAll('.edit-input').forEach(inp => {
+      if (inp.dataset.saved !== undefined) inp.value = inp.dataset.saved;
+    });
+    grid.classList.add('editing');
+    detail.querySelector('.ficha-edit-actions').classList.add('visible');
+  }
+  function cancelarEdicionFicha(btn) {
+    const detail = btn.closest('.inc-detail');
+    detail.querySelector('.detail-grid').classList.remove('editing');
+    detail.querySelector('.ficha-edit-actions').classList.remove('visible');
+  }
+  function guardarEdicionFicha(btn) {
+    const detail = btn.closest('.inc-detail');
+    const grid   = detail.querySelector('.detail-grid');
+    const card   = detail.closest('.incidencia-card');
+
+    grid.querySelectorAll('.detail-field').forEach(field => {
+      const input = field.querySelector('.edit-input');
+      if (!input) return;
+      const fieldName = input.dataset.field;
+      const val = field.querySelector('.val');
+
+      if (fieldName === 'tipo') {
+        const td = tipoData[input.value] || { emoji:'📦', cls:'otro' };
+        val.textContent = `${td.emoji} ${input.value}`;
+        card.dataset.tipo = td.cls;
+        const icon = card.querySelector('.tipo-icon');
+        icon.className = `tipo-icon tipo-${td.cls}`;
+        icon.textContent = td.emoji;
+      } else if (fieldName === 'pago') {
+        const opt = input.options[input.selectedIndex];
+        val.innerHTML = `<span class="badge ${input.value}">${opt.text}</span>`;
+        const metaBadge = card.querySelector('.pago-badge');
+        if (metaBadge) { metaBadge.className = `badge ${input.value} pago-badge`; metaBadge.textContent = opt.text; }
+      } else if (fieldName === 'fecha') {
+        const d = new Date(input.value);
+        val.textContent = d.toLocaleDateString('es-ES', { day:'numeric', month:'long', year:'numeric' });
+        const metaFecha = card.querySelector('.inc-meta .meta-fecha');
+        if (metaFecha) {
+          const estadoTxt = metaFecha.textContent.split(' ')[0];
+          metaFecha.textContent = `${estadoTxt} ${d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' })}`;
+        }
+      } else {
+        val.textContent = input.value.trim() || '—';
+        if (fieldName === 'empresa') {
+          const metaRep = card.querySelector('.inc-meta .meta-reparador');
+          if (metaRep) metaRep.textContent = input.value.trim() || 'Sin asignar';
+        }
+      }
+      input.dataset.saved = input.value;
+    });
+
+    grid.classList.remove('editing');
+    detail.querySelector('.ficha-edit-actions').classList.remove('visible');
+  }
+
+  // ── Editar / borrar anotaciones del hilo de seguimiento ──
+  const segConfigByLabel = {
+    'Intervención técnica':   { cls:'tl-intervencion', emoji:'🔧' },
+    'Llamada':                { cls:'tl-llamada2',     emoji:'📞' },
+    'Presupuesto recibido':   { cls:'tl-presupuesto',  emoji:'💶' },
+    'Foto / evidencia':       { cls:'tl-foto',          emoji:'📸' },
+    'Cierre':                 { cls:'tl-cierre',        emoji:'✅' },
+    'Nota':                   { cls:'tl-nota2',         emoji:'📝' },
+  };
+  function parseFechaToISO(str) {
+    const meses = { ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12' };
+    const m = str.match(/(\d+)\s+([a-zé]+)\.?\s+(\d+)/i);
+    if (!m) return '';
+    const dia = m[1].padStart(2,'0');
+    const mes = meses[m[2].toLowerCase().slice(0,3)] || '01';
+    return `${m[3]}-${mes}-${dia}`;
+  }
+  function editarTlItem(btn) {
+    const item = btn.closest('.tl-item');
+    if (item.querySelector('.tl-edit-inline')) return;
+    const labelActual = item.querySelector('.tl-label').textContent;
+    const fechaActual = item.querySelector('.tl-date-lbl').textContent;
+    const textoActual = item.querySelector('.tl-text-body').textContent;
+    const tipos = Object.keys(segConfigByLabel);
+    const opciones = tipos.map(t => `<option ${t===labelActual ? 'selected' : ''}>${t}</option>`).join('');
+
+    const form = document.createElement('div');
+    form.className = 'tl-edit-inline';
+    form.innerHTML = `
+      <div class="seg-form-row">
+        <select class="tl-edit-tipo">${opciones}</select>
+        <input type="date" class="tl-edit-fecha" value="${parseFechaToISO(fechaActual)}">
+      </div>
+      <textarea class="tl-edit-texto">${textoActual}</textarea>
+      <div class="seg-form-actions">
+        <button class="btn-cancel" onclick="event.stopPropagation(); cancelarTlItem(this)">Cancelar</button>
+        <button class="btn-save" onclick="event.stopPropagation(); guardarTlItem(this)">Guardar</button>
+      </div>`;
+    item.querySelector('.tl-body').appendChild(form);
+    item.classList.add('editing-tl');
+  }
+  function cancelarTlItem(btn) {
+    const form = btn.closest('.tl-edit-inline');
+    form.closest('.tl-item').classList.remove('editing-tl');
+    form.remove();
+  }
+  function guardarTlItem(btn) {
+    const form = btn.closest('.tl-edit-inline');
+    const item = btn.closest('.tl-item');
+    const tipoText = form.querySelector('.tl-edit-tipo').value;
+    const fechaVal = form.querySelector('.tl-edit-fecha').value;
+    const texto    = form.querySelector('.tl-edit-texto').value.trim();
+    if (!texto) { alert('La anotación no puede quedar vacía.'); return; }
+
+    const cfg = segConfigByLabel[tipoText] || { cls:'tl-nota2', emoji:'📝' };
+    item.className = `tl-item ${cfg.cls} editing-tl`;
+    item.querySelector('.tl-dot').textContent = cfg.emoji;
+    item.querySelector('.tl-label').textContent = tipoText;
+    if (fechaVal) {
+      const d = new Date(fechaVal);
+      item.querySelector('.tl-date-lbl').textContent = d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
+    }
+    item.querySelector('.tl-text-body').textContent = texto;
+    form.remove();
+    item.classList.remove('editing-tl');
+  }
+  function borrarTlItem(btn) {
+    if (!confirm('¿Eliminar esta anotación del hilo de seguimiento?')) return;
+    btn.closest('.tl-item').remove();
+  }
+
+  // ── Añadir / borrar fotos en una anotación ya existente ──
+  function addFotoToItem(btn) {
+    const fotosBox = btn.closest('.tl-fotos');
+    const emoji = fotoEmojis[Math.floor(Math.random() * fotoEmojis.length)];
+    const thumb = document.createElement('div');
+    thumb.className = 'tl-foto-thumb';
+    thumb.innerHTML = `${emoji}<button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button>`;
+    thumb.onclick = (e) => { if (e.target.classList.contains('tl-foto-del')) return; e.stopPropagation(); abrirLightbox(emoji); };
+    fotosBox.insertBefore(thumb, btn);
+  }
+  function borrarFoto(btn) {
+    btn.closest('.tl-foto-thumb').remove();
+  }
+
+  // ── Título breve editable ──
+  function toggleTituloEdit(btn) {
+    const main = btn.closest('.inc-main');
+    main.querySelector('.titulo-edit-form').classList.toggle('visible');
+  }
+  function guardarTitulo(e, btn) {
+    e.stopPropagation();
+    const main  = btn.closest('.inc-main');
+    const input = main.querySelector('.titulo-edit-form input');
+    const texto = input.value.trim();
+    if (!texto) { alert('El título no puede quedar vacío.'); return; }
+    main.querySelector('.titulo-texto').textContent = texto;
+    main.querySelector('.titulo-edit-form').classList.remove('visible');
+  }
+
+  function toggleUnidadEdit(btn) {
+    const block = btn.closest('.inc-main');
+    const form  = block.querySelector('.unidad-edit-form');
+    form.classList.toggle('visible');
+  }
+  function guardarUnidad(e, btn) {
+    e.stopPropagation();
+    const block = btn.closest('.inc-main');
+    const form  = block.querySelector('.unidad-edit-form');
+    const code  = form.querySelector('.code-input').value.trim() || '—';
+    const tenant= form.querySelector('.tenant-input').value.trim() || 'Sin asignar';
+    block.querySelector('.unidad-code').textContent = code;
+    block.querySelector('.unidad-tenant').textContent = tenant;
+    form.classList.remove('visible');
+  }
+
+  // ── Descripción editable ──
+  function editarDescripcion(btn) {
+    const field = btn.closest('.detail-field');
+    field.querySelector('.desc-textarea').classList.add('visible');
+    field.querySelector('.desc-textarea').style.display = 'block';
+    field.querySelector('.desc-actions').classList.add('visible');
+  }
+  function cancelarDescripcion(btn) {
+    const field = btn.closest('.detail-field');
+    field.querySelector('.desc-textarea').style.display = 'none';
+    field.querySelector('.desc-actions').classList.remove('visible');
+  }
+  function guardarDescripcion(btn) {
+    const field = btn.closest('.detail-field');
+    const texto = field.querySelector('.desc-textarea').value.trim();
+    field.querySelector('.val').textContent = texto;
+    field.querySelector('.desc-textarea').style.display = 'none';
+    field.querySelector('.desc-actions').classList.remove('visible');
+  }
+
+  // ── Fotos en hilo de seguimiento ──
+  const fotoEmojis = ['📷','🧱','💧','🔧','🪛','🧰'];
+  function addFotoPreview(btn) {
+    const row = btn.closest('.seg-fotos-row');
+    const preview = row.querySelector('.seg-fotos-preview');
+    const emoji = fotoEmojis[Math.floor(Math.random() * fotoEmojis.length)];
+    const thumb = document.createElement('div');
+    thumb.className = 'tl-foto-thumb';
+    thumb.textContent = emoji;
+    thumb.onclick = (e) => { e.stopPropagation(); abrirLightbox(emoji); };
+    preview.appendChild(thumb);
+  }
+
+  // ── Lightbox ──
+  function abrirLightbox(emoji) {
+    document.getElementById('lightbox-content').textContent = emoji;
+    document.getElementById('lightbox').classList.add('visible');
+  }
+  function cerrarLightbox() {
+    document.getElementById('lightbox').classList.remove('visible');
+  }
+
+  function crearIncidencia() {
+    const titulo = document.getElementById('nueva-titulo').value.trim();
+    if (!titulo) { alert('Escribe un título.'); return; }
+
+    const unidadCode   = document.getElementById('nueva-unidad-code').value.trim() || '—';
+    const unidadTenant = document.getElementById('nueva-unidad-tenant').value.trim() || 'Sin asignar';
+
+    const tipoBtn  = document.querySelector('.tipo-pick-btn.selected');
+    const tipoText = tipoBtn.querySelector('span:last-child').textContent;
+    const td       = tipoData[tipoText] || { emoji:'📦', cls:'otro' };
+    const fecha    = document.getElementById('nueva-fecha').value;
+    const d        = new Date(fecha);
+    const fechaStr = d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
+    const pago     = document.getElementById('nueva-pago').value;
+    const rep      = document.getElementById('nueva-reparador').value || 'Sin asignar';
+    const pagoLabel = { propietario:'Propietario', inquilino:'Inquilino', seguro:'Seguro' }[pago];
+    const pagoCls   = { propietario:'propietario', inquilino:'inquilino-pay', seguro:'seguro' }[pago];
+
+    const card = document.createElement('div');
+    card.className = 'incidencia-card';
+    card.dataset.estado = 'abierta';
+    card.dataset.tipo   = td.cls;
+    card.onclick = function(){ toggleDetalle(this); };
+    card.innerHTML = `
+      <div class="inc-header">
+        <div class="unidad-line">
+          <span class="unidad-code">${unidadCode}</span>
+          <span class="unidad-tenant">${unidadTenant}</span>
+          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
+        </div>
+        <div class="unidad-edit-form" onclick="event.stopPropagation()">
+          <input type="text" class="code-input" list="dl-unidades" value="${unidadCode}" oninput="autoFillUnidad(this)">
+          <input type="text" class="tenant-input" list="dl-arrendatarios" value="${unidadTenant}">
+          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
+        </div>
+        <div class="inc-header-row">
+          <div class="tipo-icon tipo-${td.cls}">${td.emoji}</div>
+          <div class="inc-main">
+            <div class="inc-title">
+              <span class="titulo-texto">${titulo}</span>
+              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
+            </div>
+            <div class="titulo-edit-form" onclick="event.stopPropagation()">
+              <input type="text" value="${titulo}">
+              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
+            </div>
+            <div class="inc-meta">
+              <div class="meta-row">
+                <span class="meta-fecha">Abierta ${fechaStr}</span>
+                <span class="sep">·</span>
+                <span class="badge ${pagoCls} pago-badge">${pagoLabel}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-reparador">${rep}</span>
+              </div>
+              <div class="meta-row">
+                <span>🕐 0 días</span>
+                <span class="sep">·</span>
+                <span class="badge abierta estado-badge">● Abierta</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    const lista = document.getElementById('lista-incidencias');
+    lista.insertBefore(card, lista.firstChild);
+
+    actualizarStats();
+    filtrar();
+    cerrarModal();
+
+    // Reset form
+    document.getElementById('nueva-titulo').value = '';
+    document.getElementById('nueva-desc').value = '';
+    document.getElementById('nueva-reparador').value = '';
+    document.getElementById('nueva-tel').value = '';
+    document.getElementById('nueva-unidad-code').value = '';
+    document.getElementById('nueva-unidad-tenant').value = '';
+    document.querySelectorAll('.tipo-pick-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
+  }
+
+  // Seguimiento inline
+  function toggleSegForm(e, btn) {
+    e.stopPropagation();
+    const form = btn.nextElementSibling;
+    form.classList.toggle('visible');
+    if (form.classList.contains('visible')) {
+      form.querySelector('input[type=date]').valueAsDate = new Date();
+    }
+  }
+  function cerrarSegForm(e, btn) {
+    e.stopPropagation();
+    btn.closest('.seg-form').classList.remove('visible');
+  }
+
+  const segConfig = {
+    '🔧 Intervención técnica': { cls:'tl-intervencion', label:'Intervención técnica' },
+    '📞 Llamada':              { cls:'tl-llamada2',     label:'Llamada' },
+    '💶 Presupuesto recibido': { cls:'tl-presupuesto',  label:'Presupuesto recibido' },
+    '📸 Foto / evidencia':     { cls:'tl-foto',         label:'Foto / evidencia' },
+    '✅ Cierre':               { cls:'tl-cierre',       label:'Cierre' },
+    '📝 Nota':                 { cls:'tl-nota2',        label:'Nota' },
+  };
+  const segEmoji = {
+    '🔧 Intervención técnica':'🔧','📞 Llamada':'📞','💶 Presupuesto recibido':'💶',
+    '📸 Foto / evidencia':'📸','✅ Cierre':'✅','📝 Nota':'📝'
+  };
+
+  function guardarSeg(e, btn) {
+    e.stopPropagation();
+    const form  = btn.closest('.seg-form');
+    const tipo  = form.querySelector('select').value;
+    const texto = form.querySelector('textarea').value.trim();
+    const fecha = form.querySelector('input[type=date]').value;
+    if (!texto) { alert('Escribe una descripción.'); return; }
+
+    const cfg = segConfig[tipo] || { cls:'tl-nota2', label:'Nota' };
+    const d   = new Date(fecha);
+    const fechaStr = d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
+    const emoji = segEmoji[tipo] || '📝';
+
+    const fotosPreview = form.querySelectorAll('.seg-fotos-preview .tl-foto-thumb');
+    let fotosThumbs = '';
+    fotosPreview.forEach(t => {
+      const em = t.textContent.replace('×','').trim();
+      fotosThumbs += `<div class="tl-foto-thumb" onclick="event.stopPropagation(); abrirLightbox('${em}')">${em}<button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>`;
+    });
+
+    const item = document.createElement('div');
+    item.className = `tl-item ${cfg.cls}`;
+    item.innerHTML = `
+      <div class="tl-dot-wrap"><div class="tl-dot">${emoji}</div></div>
+      <div class="tl-body">
+        <div class="tl-meta-row">
+          <span class="tl-label">${cfg.label}</span>
+          <span class="tl-date-lbl">${fechaStr}</span>
+          <span class="tl-item-actions">
+            <button class="tl-action-btn" onclick="event.stopPropagation(); editarTlItem(this)" title="Editar">✎</button>
+            <button class="tl-action-btn" onclick="event.stopPropagation(); borrarTlItem(this)" title="Eliminar">🗑</button>
+          </span>
+        </div>
+        <div class="tl-text-body">${texto}</div>
+        <div class="tl-fotos">
+          ${fotosThumbs}
+          <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
+        </div>
+      </div>`;
+
+    const container = form.closest('.seguimiento').querySelector('.tl-items');
+    container.appendChild(item);
+    form.querySelector('textarea').value = '';
+    form.querySelector('.seg-fotos-preview').innerHTML = '';
+    form.classList.remove('visible');
+  }
+</script>
+</body>
+</html>
