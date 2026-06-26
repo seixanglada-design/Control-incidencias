@@ -1916,7 +1916,7 @@
     const fecha = seg.fecha ? new Date(seg.fecha).toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }) : '';
     const adjuntos = seg.adjuntos || [];
     const fotosThumbs = adjuntos.map((path, i) =>
-      `<div class="tl-foto-thumb" title="${escapeAttr(path)}">📎<small>${i + 1}</small></div>`
+      `<div class="tl-foto-thumb" title="${escapeAttr(path)}" data-attachment="${escapeAttr(path)}">📎<small>${i + 1}</small></div>`
     ).join('');
     return `
       <div class="tl-item ${cfg.cls}" data-seg-id="${escapeAttr(seg.id || '')}">
@@ -1941,6 +1941,7 @@
 
   function renderIncidenciasCloud() {
     document.querySelectorAll('.incidencia-card[data-source="onedrive"]').forEach(el => el.remove());
+    eliminarEjemplosIniciales();
     const lista = document.getElementById('lista-incidencias');
     [...incidenciasCloud].reverse().forEach(inc => lista.insertBefore(crearCardIncidencia(inc), lista.firstChild));
     asegurarBotonesEliminar();
@@ -1973,8 +1974,16 @@
       el.removeAttribute('onclick');
       if (el.dataset.stopThumbClick === '1') return;
       el.dataset.stopThumbClick = '1';
-      el.addEventListener('click', event => event.stopPropagation());
+      el.addEventListener('click', event => {
+        event.stopPropagation();
+        const attachment = el.dataset.attachment;
+        if (attachment) abrirAdjunto(attachment);
+      });
     });
+  }
+
+  function eliminarEjemplosIniciales() {
+    document.querySelectorAll('.incidencia-card:not([data-source])').forEach(card => card.remove());
   }
 
   async function borrarIncidencia(event, btn) {
@@ -2032,7 +2041,7 @@
           </div>
           <div class="tl-text-body">${fotos.length} archivo(s) subido(s) a OneDrive.</div>
           <div class="tl-fotos">
-            ${fotos.map((f, i) => `<div class="tl-foto-thumb" title="${escapeAttr(f)}">📎<small>${i + 1}</small></div>`).join('')}
+            ${fotos.map((f, i) => `<div class="tl-foto-thumb" title="${escapeAttr(f)}" data-attachment="${escapeAttr(f)}">📎<small>${i + 1}</small></div>`).join('')}
             <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
           </div>
         </div>
@@ -2503,11 +2512,42 @@
   }
 
   // ── Lightbox ──
+  async function abrirAdjunto(path) {
+    if (!path || path.startsWith('Adjunto local')) return;
+    if (!graphAccount) {
+      alert('Conecta Microsoft para abrir archivos de OneDrive.');
+      return;
+    }
+    try {
+      const res = await graphFetch(`${graphPath(path)}:/content`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      if (blob.type.startsWith('image/')) {
+        const content = document.getElementById('lightbox-content');
+        content.innerHTML = `<img src="${url}" alt="Adjunto" style="max-width:90vw;max-height:82vh;border-radius:8px;display:block;">`;
+        content.dataset.objectUrl = url;
+        document.getElementById('lightbox').classList.add('visible');
+      } else {
+        window.open(url, '_blank', 'noopener');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo abrir el archivo adjunto.');
+    }
+  }
+
   function abrirLightbox(emoji) {
     document.getElementById('lightbox-content').textContent = emoji;
     document.getElementById('lightbox').classList.add('visible');
   }
   function cerrarLightbox() {
+    const content = document.getElementById('lightbox-content');
+    if (content.dataset.objectUrl) {
+      URL.revokeObjectURL(content.dataset.objectUrl);
+      delete content.dataset.objectUrl;
+    }
+    content.innerHTML = '';
     document.getElementById('lightbox').classList.remove('visible');
   }
 
@@ -2574,7 +2614,9 @@
     document.querySelectorAll('.tipo-pick-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
   }
 
+  eliminarEjemplosIniciales();
   asegurarBotonesEliminar();
+  actualizarStats();
   asegurarInteraccionesFicha();
   initMicrosoft();
 
@@ -2639,7 +2681,7 @@
     const fotosPreview = adjuntos;
     let fotosThumbs = '';
     fotosPreview.forEach((path, i) => {
-      fotosThumbs += `<div class="tl-foto-thumb" title="${escapeAttr(path)}">📎<small>${i + 1}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>`;
+      fotosThumbs += `<div class="tl-foto-thumb" title="${escapeAttr(path)}" data-attachment="${escapeAttr(path)}">📎<small>${i + 1}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>`;
     });
 
     const item = document.createElement('div');
