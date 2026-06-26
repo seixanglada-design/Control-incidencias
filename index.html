@@ -62,7 +62,7 @@
   }
   .brand { font-family: 'DM Serif Display', serif; font-size: 18px; color: white; }
   .brand span { color: #6366f1; }
-  .header-actions { display: flex; gap: 8px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
   .btn-header {
     background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
     color: white; padding: 6px 14px; border-radius: 6px;
@@ -71,6 +71,8 @@
   .btn-header:hover { background: rgba(255,255,255,.18); }
   .btn-header.primary { background: var(--indigo); border-color: var(--indigo); }
   .btn-header.primary:hover { background: var(--indigo-l); }
+  .sync-status { font-size: 12px; color: rgba(255,255,255,.72); max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hidden-file-input { display: none; }
 
   /* ── BREADCRUMB ── */
   .breadcrumb {
@@ -576,6 +578,9 @@
 <header class="app-header">
   <div class="brand">Control<span>·</span>Incidencias</div>
   <div class="header-actions">
+    <span class="sync-status" id="sync-status">Sin conectar a OneDrive</span>
+    <button class="btn-header" id="btn-login" onclick="loginMicrosoft()">Conectar Microsoft</button>
+    <button class="btn-header" id="btn-sync" onclick="sincronizarOneDrive()" disabled>Sincronizar</button>
     <button class="btn-nueva" onclick="abrirModal()">+ Nueva incidencia</button>
   </div>
 </header>
@@ -1357,10 +1362,11 @@
 
       <div class="form-group">
         <label>Adjuntar foto o documento</label>
-        <div class="upload-zone" onclick="alert('En la versión real sube directamente a OneDrive')">
+        <label class="upload-zone" for="nueva-fotos">
           <div class="icon">📎</div>
-          <p>Toca para adjuntar foto o PDF<br><small>Se guardará en la carpeta del inquilino en OneDrive</small></p>
-        </div>
+          <p>Toca para adjuntar fotos o PDF<br><small id="nueva-fotos-label">Se guardarán en OneDrive por unidad e incidencia</small></p>
+        </label>
+        <input class="hidden-file-input" type="file" id="nueva-fotos" multiple accept="image/*,application/pdf" onchange="actualizarFotosSeleccionadas()">
       </div>
 
     </div>
@@ -1603,9 +1609,308 @@
   <div class="lightbox-content" id="lightbox-content"></div>
 </div>
 
+<script src="https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js"></script>
 <script>
   // Base de datos de unidades/arrendatarios — exportada de BBDD_Incidencias.xlsx (129 unidades)
-  const unidadesDB = [{"code": "ROS_0_2B-izda", "tenant": "Jose Walter Valencia García"}, {"code": "ROS_0_1dda", "tenant": "Vannessa Pena"}, {"code": "ROS_0_2B-dda", "tenant": "VACY"}, {"code": "ROS_0_2izda", "tenant": "Di Zhang"}, {"code": "ROS_0_3", "tenant": "Delia Antonia Gorski Lavié de Silveira"}, {"code": "ROS_EN_1", "tenant": "Astte López, Margot"}, {"code": "ROS_EN_2", "tenant": "Kabita Lamichhane"}, {"code": "ROS_EN_3", "tenant": "Maria Aleida Hurtado"}, {"code": "ROS_EN_4", "tenant": "Claudio Silveira Silva"}, {"code": "ROS_PR_1", "tenant": "Juliana Almeida Cobo"}, {"code": "ROS_PR_2", "tenant": "Zahid Naseem Begum"}, {"code": "ROS_PR_3", "tenant": "VACY"}, {"code": "ROS_PR_4", "tenant": "VACY"}, {"code": "ROS_1_1", "tenant": "Mathias Graf"}, {"code": "ROS_1_2", "tenant": "Narciso Artasona Monfá"}, {"code": "ROS_1_3", "tenant": "Ana Sofia Soffe Calabozo y Bart Da Conciçao Maqrques Dos Santos"}, {"code": "ROS_1_4", "tenant": "Daniel Mercerreys Nebreda"}, {"code": "ROS_2_1", "tenant": "Carlos López Garcia"}, {"code": "ROS_2_2", "tenant": "Javier Bonet Garcia"}, {"code": "ROS_2_3", "tenant": "Antoine Alexis Gardes"}, {"code": "ROS_2_4", "tenant": "VACY"}, {"code": "ROS_3_1", "tenant": "Maria Dolores Diaz Gonzalez"}, {"code": "ROS_3_2", "tenant": "Marina Farguell Sales"}, {"code": "ROS_3_3", "tenant": "VACY"}, {"code": "ROS_3_4", "tenant": "Esther Gregorio Riba"}, {"code": "ROS_4_1", "tenant": "Lelia Fabiola Mondillo"}, {"code": "ROS_4_2", "tenant": "Barbara Luisa Guimeraes Alves de Sousa"}, {"code": "ROS_4_3", "tenant": "Eduardo Bertolin Muñoz"}, {"code": "ROS_4_4", "tenant": "Isabel Tormo Pelegrin"}, {"code": "ROS_5_1", "tenant": "Maria Jesús Ruiz Gallego"}, {"code": "ROS_5_2", "tenant": "Maria Laura Bonello"}, {"code": "ROS_5_3", "tenant": "Maria Sol Daniela Noya y Fernanda Mosquera Rozo"}, {"code": "ROS_5_4", "tenant": "Ramon Codina Fossas"}, {"code": "BON_0_1_2", "tenant": "Maria Jose Torres Carvajal"}, {"code": "BON_0_3", "tenant": "VACY (FERRETERIA)"}, {"code": "BON_PR_1", "tenant": "VACY (antes vivienda de ferreteria)"}, {"code": "BON_PR_2", "tenant": "VACY"}, {"code": "BON_PR_3", "tenant": "Javier Vilarrubia Llopis/Franziska balzer"}, {"code": "BON_PR_4", "tenant": "VACY"}, {"code": "BON_1_1", "tenant": "INTERNATIONAL AMERICAN SCHOOL EDUCATION, SL"}, {"code": "BON_1_2", "tenant": "Maria Teresa Rey del Hoyo"}, {"code": "BON_1_3", "tenant": "Miguela Campos Brun"}, {"code": "BON_1_4", "tenant": "VACY"}, {"code": "BON_2_1", "tenant": "Armonia Rodriguez Rodrigues"}, {"code": "BON_2_2", "tenant": "Sandra Margarida Moura da Cruz y Juan March Berlinches"}, {"code": "BON_2_3", "tenant": "Andreu Agustín Andrés"}, {"code": "BON_2_4", "tenant": "Chloe Emma Charlotte Lagrue"}, {"code": "BON_3_1", "tenant": "VACY"}, {"code": "BON_3_2A", "tenant": "VACY"}, {"code": "BON_3_2B", "tenant": "Francisco Javier Gimeno-Bayon Forteza"}, {"code": "BON_3_3", "tenant": "Magdalena Ouro Cajide"}, {"code": "BON_3_4", "tenant": "VACY"}, {"code": "SAN_PB_1", "tenant": "Cervesera Artesana SLU"}, {"code": "SAN_PB_2", "tenant": "Un Taller SCP"}, {"code": "SAN_PB_3", "tenant": "Prosound Technica, SL"}, {"code": "SAN_PB_4,5,6", "tenant": "VACY"}, {"code": "SAN_PB_7", "tenant": "VACY"}, {"code": "SAN_Altillo_8", "tenant": "Seix Anglada SL"}, {"code": "SAN_1_A", "tenant": "VACY"}, {"code": "SAN_1_B", "tenant": "Estigma Edicions SL"}, {"code": "SAN_1_C", "tenant": "VACY"}, {"code": "SAN_1_D", "tenant": "Vanesa Almar Llobet"}, {"code": "SAN_1_E", "tenant": "VACY"}, {"code": "SAN_1_F", "tenant": "BO1 Estudi d'Arquitectes, SLP"}, {"code": "SAN_2_A", "tenant": "Amalgama Studio SL"}, {"code": "SAN_2_B", "tenant": "VACY"}, {"code": "SAN_2_C", "tenant": "Estudio Bendita Gloria SL"}, {"code": "SAN_2_D", "tenant": "Vent de tramuntana i mestral, S.L."}, {"code": "SAN_3_A", "tenant": "Leonardo Jesús Enrique Garcia Mendez"}, {"code": "SAN_3_B", "tenant": "VACY"}, {"code": "SAN_3_C", "tenant": "Camille Rose Claude Vannier"}, {"code": "SAN_3_D", "tenant": "Caterina Barjau Dachs"}, {"code": "SAN_3_E", "tenant": "David Borrull Carreras y Isabel Graña Muñoz"}, {"code": "SAN_4_1", "tenant": "VACY"}, {"code": "SAN_4_2", "tenant": "Marta Prat de la Riba Ayma"}, {"code": "SEP_0_1", "tenant": "LiFang Qiu"}, {"code": "SEP_0_2", "tenant": "VACY"}, {"code": "SEP_PR_1", "tenant": "Flora Fano Orizano"}, {"code": "SEP_PR_2", "tenant": "Monica Norma Zumba Saquipai"}, {"code": "SEP_1_1", "tenant": "Juan Tomillero Durán"}, {"code": "SEP_1_2", "tenant": "Luis Aurelio Salas Padilla"}, {"code": "SEP_2_1", "tenant": "Pilar Puig Sanglas"}, {"code": "SEP_2_2", "tenant": "Hassan Hamza"}, {"code": "SEP_3_1", "tenant": "Mauricio Andres Vargas Tierradentro / Angela Rocio Sanchez Conde"}, {"code": "SEP_3_2", "tenant": "VACY"}, {"code": "SEP_4_1", "tenant": "VACY"}, {"code": "SEP_4_2", "tenant": "VACY"}, {"code": "SEP_5_1", "tenant": "VACY"}, {"code": "SEP_5_2", "tenant": "VACY"}, {"code": "RC3_0_1", "tenant": "VACY"}, {"code": "RC3_0_2", "tenant": "Sandra Iserte Serrano"}, {"code": "RC3_PR_1", "tenant": "Ramiro Claudio Ponce"}, {"code": "RC3_PR_2", "tenant": "Sujerin Maria Feliz Jimenez"}, {"code": "RC3_1_1", "tenant": "VACY"}, {"code": "RC3_1_2", "tenant": "Giovanna Pozo Guzman"}, {"code": "RC3_2_1", "tenant": "Ernesto Cuba Flores"}, {"code": "RC3_2_2", "tenant": "Asunción Alcaraz Boro"}, {"code": "RC3_3_1", "tenant": "Adolfo Roca Escalante"}, {"code": "RC3_3_2", "tenant": "Jessica Viviana Delgado"}, {"code": "RC5_0_1", "tenant": "VACY"}, {"code": "RC5_0_2", "tenant": "Ramón Royo Font"}, {"code": "RC5_PR_1", "tenant": "Mauricio Andres Vargas Tierradentro"}, {"code": "RC5_PR_2", "tenant": "Rosario Turigas Gabarro"}, {"code": "RC5_1_1", "tenant": "Manuel Perez Cruz"}, {"code": "RC5_1_2", "tenant": "Martha Marina Claros Ferrel"}, {"code": "RC5_2_1", "tenant": "Rosa Aranibar Rojas"}, {"code": "RC5_2_2", "tenant": "VACY"}, {"code": "RC5_3_1", "tenant": "Juana Solé Alcaraz"}, {"code": "RC5_3_2", "tenant": "Deny Arce Vespa"}, {"code": "RC7_0_1", "tenant": "VACY"}, {"code": "RC7_PR_1", "tenant": "Mercedes Adriana Choque Rojas"}, {"code": "RC7_1_1", "tenant": "Aldo Chelton Valencia Alvarez"}, {"code": "RC7_2_1", "tenant": "Ali  QamaryTauqeer"}, {"code": "RC7_3_1", "tenant": "Dolores Benages"}, {"code": "RC7_4_1", "tenant": "Rosa Vazquez Espinoza"}, {"code": "SEP_6_1", "tenant": "VACY"}, {"code": "PALL", "tenant": "Miguel Cardenas Galan"}, {"code": "PALL", "tenant": "Manuel del Rosal Ortiz"}, {"code": "PALL", "tenant": "Juan Morales Martín,"}, {"code": "PALL", "tenant": "Ayuntamiento Pallejà"}, {"code": "PALL", "tenant": "Christopher Arrué Barragan"}, {"code": "ROS_GEN", "tenant": ""}, {"code": "SEP_GEN", "tenant": ""}, {"code": "SAN_GEN", "tenant": ""}, {"code": "BON_GEN", "tenant": ""}, {"code": "RC3_GEN", "tenant": ""}, {"code": "RC5_GEN", "tenant": ""}, {"code": "RC7_GEN", "tenant": ""}, {"code": "PALL_GEN", "tenant": ""}];
+  let unidadesDB = [{"code": "ROS_0_2B-izda", "tenant": "Jose Walter Valencia García"}, {"code": "ROS_0_1dda", "tenant": "Vannessa Pena"}, {"code": "ROS_0_2B-dda", "tenant": "VACY"}, {"code": "ROS_0_2izda", "tenant": "Di Zhang"}, {"code": "ROS_0_3", "tenant": "Delia Antonia Gorski Lavié de Silveira"}, {"code": "ROS_EN_1", "tenant": "Astte López, Margot"}, {"code": "ROS_EN_2", "tenant": "Kabita Lamichhane"}, {"code": "ROS_EN_3", "tenant": "Maria Aleida Hurtado"}, {"code": "ROS_EN_4", "tenant": "Claudio Silveira Silva"}, {"code": "ROS_PR_1", "tenant": "Juliana Almeida Cobo"}, {"code": "ROS_PR_2", "tenant": "Zahid Naseem Begum"}, {"code": "ROS_PR_3", "tenant": "VACY"}, {"code": "ROS_PR_4", "tenant": "VACY"}, {"code": "ROS_1_1", "tenant": "Mathias Graf"}, {"code": "ROS_1_2", "tenant": "Narciso Artasona Monfá"}, {"code": "ROS_1_3", "tenant": "Ana Sofia Soffe Calabozo y Bart Da Conciçao Maqrques Dos Santos"}, {"code": "ROS_1_4", "tenant": "Daniel Mercerreys Nebreda"}, {"code": "ROS_2_1", "tenant": "Carlos López Garcia"}, {"code": "ROS_2_2", "tenant": "Javier Bonet Garcia"}, {"code": "ROS_2_3", "tenant": "Antoine Alexis Gardes"}, {"code": "ROS_2_4", "tenant": "VACY"}, {"code": "ROS_3_1", "tenant": "Maria Dolores Diaz Gonzalez"}, {"code": "ROS_3_2", "tenant": "Marina Farguell Sales"}, {"code": "ROS_3_3", "tenant": "VACY"}, {"code": "ROS_3_4", "tenant": "Esther Gregorio Riba"}, {"code": "ROS_4_1", "tenant": "Lelia Fabiola Mondillo"}, {"code": "ROS_4_2", "tenant": "Barbara Luisa Guimeraes Alves de Sousa"}, {"code": "ROS_4_3", "tenant": "Eduardo Bertolin Muñoz"}, {"code": "ROS_4_4", "tenant": "Isabel Tormo Pelegrin"}, {"code": "ROS_5_1", "tenant": "Maria Jesús Ruiz Gallego"}, {"code": "ROS_5_2", "tenant": "Maria Laura Bonello"}, {"code": "ROS_5_3", "tenant": "Maria Sol Daniela Noya y Fernanda Mosquera Rozo"}, {"code": "ROS_5_4", "tenant": "Ramon Codina Fossas"}, {"code": "BON_0_1_2", "tenant": "Maria Jose Torres Carvajal"}, {"code": "BON_0_3", "tenant": "VACY (FERRETERIA)"}, {"code": "BON_PR_1", "tenant": "VACY (antes vivienda de ferreteria)"}, {"code": "BON_PR_2", "tenant": "VACY"}, {"code": "BON_PR_3", "tenant": "Javier Vilarrubia Llopis/Franziska balzer"}, {"code": "BON_PR_4", "tenant": "VACY"}, {"code": "BON_1_1", "tenant": "INTERNATIONAL AMERICAN SCHOOL EDUCATION, SL"}, {"code": "BON_1_2", "tenant": "Maria Teresa Rey del Hoyo"}, {"code": "BON_1_3", "tenant": "Miguela Campos Brun"}, {"code": "BON_1_4", "tenant": "VACY"}, {"code": "BON_2_1", "tenant": "Armonia Rodriguez Rodrigues"}, {"code": "BON_2_2", "tenant": "Sandra Margarida Moura da Cruz y Juan March Berlinches"}, {"code": "BON_2_3", "tenant": "Andreu Agustín Andrés"}, {"code": "BON_2_4", "tenant": "Chloe Emma Charlotte Lagrue"}, {"code": "BON_3_1", "tenant": "VACY"}, {"code": "BON_3_2A", "tenant": "VACY"}, {"code": "BON_3_2B", "tenant": "Francisco Javier Gimeno-Bayon Forteza"}, {"code": "BON_3_3", "tenant": "Magdalena Ouro Cajide"}, {"code": "BON_3_4", "tenant": "VACY"}, {"code": "SAN_PB_1", "tenant": "Cervesera Artesana SLU"}, {"code": "SAN_PB_2", "tenant": "Un Taller SCP"}, {"code": "SAN_PB_3", "tenant": "Prosound Technica, SL"}, {"code": "SAN_PB_4,5,6", "tenant": "VACY"}, {"code": "SAN_PB_7", "tenant": "VACY"}, {"code": "SAN_Altillo_8", "tenant": "Seix Anglada SL"}, {"code": "SAN_1_A", "tenant": "VACY"}, {"code": "SAN_1_B", "tenant": "Estigma Edicions SL"}, {"code": "SAN_1_C", "tenant": "VACY"}, {"code": "SAN_1_D", "tenant": "Vanesa Almar Llobet"}, {"code": "SAN_1_E", "tenant": "VACY"}, {"code": "SAN_1_F", "tenant": "BO1 Estudi d'Arquitectes, SLP"}, {"code": "SAN_2_A", "tenant": "Amalgama Studio SL"}, {"code": "SAN_2_B", "tenant": "VACY"}, {"code": "SAN_2_C", "tenant": "Estudio Bendita Gloria SL"}, {"code": "SAN_2_D", "tenant": "Vent de tramuntana i mestral, S.L."}, {"code": "SAN_3_A", "tenant": "Leonardo Jesús Enrique Garcia Mendez"}, {"code": "SAN_3_B", "tenant": "VACY"}, {"code": "SAN_3_C", "tenant": "Camille Rose Claude Vannier"}, {"code": "SAN_3_D", "tenant": "Caterina Barjau Dachs"}, {"code": "SAN_3_E", "tenant": "David Borrull Carreras y Isabel Graña Muñoz"}, {"code": "SAN_4_1", "tenant": "VACY"}, {"code": "SAN_4_2", "tenant": "Marta Prat de la Riba Ayma"}, {"code": "SEP_0_1", "tenant": "LiFang Qiu"}, {"code": "SEP_0_2", "tenant": "VACY"}, {"code": "SEP_PR_1", "tenant": "Flora Fano Orizano"}, {"code": "SEP_PR_2", "tenant": "Monica Norma Zumba Saquipai"}, {"code": "SEP_1_1", "tenant": "Juan Tomillero Durán"}, {"code": "SEP_1_2", "tenant": "Luis Aurelio Salas Padilla"}, {"code": "SEP_2_1", "tenant": "Pilar Puig Sanglas"}, {"code": "SEP_2_2", "tenant": "Hassan Hamza"}, {"code": "SEP_3_1", "tenant": "Mauricio Andres Vargas Tierradentro / Angela Rocio Sanchez Conde"}, {"code": "SEP_3_2", "tenant": "VACY"}, {"code": "SEP_4_1", "tenant": "VACY"}, {"code": "SEP_4_2", "tenant": "VACY"}, {"code": "SEP_5_1", "tenant": "VACY"}, {"code": "SEP_5_2", "tenant": "VACY"}, {"code": "RC3_0_1", "tenant": "VACY"}, {"code": "RC3_0_2", "tenant": "Sandra Iserte Serrano"}, {"code": "RC3_PR_1", "tenant": "Ramiro Claudio Ponce"}, {"code": "RC3_PR_2", "tenant": "Sujerin Maria Feliz Jimenez"}, {"code": "RC3_1_1", "tenant": "VACY"}, {"code": "RC3_1_2", "tenant": "Giovanna Pozo Guzman"}, {"code": "RC3_2_1", "tenant": "Ernesto Cuba Flores"}, {"code": "RC3_2_2", "tenant": "Asunción Alcaraz Boro"}, {"code": "RC3_3_1", "tenant": "Adolfo Roca Escalante"}, {"code": "RC3_3_2", "tenant": "Jessica Viviana Delgado"}, {"code": "RC5_0_1", "tenant": "VACY"}, {"code": "RC5_0_2", "tenant": "Ramón Royo Font"}, {"code": "RC5_PR_1", "tenant": "Mauricio Andres Vargas Tierradentro"}, {"code": "RC5_PR_2", "tenant": "Rosario Turigas Gabarro"}, {"code": "RC5_1_1", "tenant": "Manuel Perez Cruz"}, {"code": "RC5_1_2", "tenant": "Martha Marina Claros Ferrel"}, {"code": "RC5_2_1", "tenant": "Rosa Aranibar Rojas"}, {"code": "RC5_2_2", "tenant": "VACY"}, {"code": "RC5_3_1", "tenant": "Juana Solé Alcaraz"}, {"code": "RC5_3_2", "tenant": "Deny Arce Vespa"}, {"code": "RC7_0_1", "tenant": "VACY"}, {"code": "RC7_PR_1", "tenant": "Mercedes Adriana Choque Rojas"}, {"code": "RC7_1_1", "tenant": "Aldo Chelton Valencia Alvarez"}, {"code": "RC7_2_1", "tenant": "Ali  QamaryTauqeer"}, {"code": "RC7_3_1", "tenant": "Dolores Benages"}, {"code": "RC7_4_1", "tenant": "Rosa Vazquez Espinoza"}, {"code": "SEP_6_1", "tenant": "VACY"}, {"code": "PALL", "tenant": "Miguel Cardenas Galan"}, {"code": "PALL", "tenant": "Manuel del Rosal Ortiz"}, {"code": "PALL", "tenant": "Juan Morales Martín,"}, {"code": "PALL", "tenant": "Ayuntamiento Pallejà"}, {"code": "PALL", "tenant": "Christopher Arrué Barragan"}, {"code": "ROS_GEN", "tenant": ""}, {"code": "SEP_GEN", "tenant": ""}, {"code": "SAN_GEN", "tenant": ""}, {"code": "BON_GEN", "tenant": ""}, {"code": "RC3_GEN", "tenant": ""}, {"code": "RC5_GEN", "tenant": ""}, {"code": "RC7_GEN", "tenant": ""}, {"code": "PALL_GEN", "tenant": ""}];
+
+  const msalConfig = {
+    auth: {
+      clientId: '9f893527-8124-4633-8d8f-23725517fe16',
+      authority: 'https://login.microsoftonline.com/ad906e1f-801f-4350-9dd6-c8a62a189ccb',
+      redirectUri: 'https://seixanglada-design.github.io/Control-incidencias/'
+    },
+    cache: { cacheLocation: 'localStorage' }
+  };
+  const graphScopes = ['User.Read', 'Files.ReadWrite', 'offline_access'];
+  const oneDriveBase = 'Apps/ControlIncidencias';
+  const incidenciasJsonPath = `${oneDriveBase}/incidencias.json`;
+  const fotosBasePath = `${oneDriveBase}/Fotos`;
+  let msalInstance = null;
+  let graphAccount = null;
+  let incidenciasCloud = [];
+
+  function setSyncStatus(texto) {
+    const el = document.getElementById('sync-status');
+    if (el) el.textContent = texto;
+  }
+
+  function graphReady() {
+    return typeof window.msal !== 'undefined';
+  }
+
+  async function initMicrosoft() {
+    if (!graphReady()) {
+      setSyncStatus('Microsoft login no cargado');
+      return;
+    }
+    msalInstance = new msal.PublicClientApplication(msalConfig);
+    const result = await msalInstance.handleRedirectPromise();
+    graphAccount = result?.account || msalInstance.getAllAccounts()[0] || null;
+    if (graphAccount) {
+      msalInstance.setActiveAccount(graphAccount);
+      document.getElementById('btn-login').textContent = 'Conectado';
+      document.getElementById('btn-sync').disabled = false;
+      setSyncStatus(graphAccount.username || 'Conectado a OneDrive');
+      await sincronizarOneDrive();
+    }
+  }
+
+  async function loginMicrosoft() {
+    if (!graphReady()) {
+      alert('No se pudo cargar Microsoft login. Revisa la conexión y vuelve a intentarlo.');
+      return;
+    }
+    if (!msalInstance) msalInstance = new msal.PublicClientApplication(msalConfig);
+    try {
+      const result = await msalInstance.loginPopup({ scopes: graphScopes });
+      graphAccount = result.account;
+      msalInstance.setActiveAccount(graphAccount);
+      document.getElementById('btn-login').textContent = 'Conectado';
+      document.getElementById('btn-sync').disabled = false;
+      await sincronizarOneDrive();
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo iniciar sesión con Microsoft.');
+    }
+  }
+
+  async function getToken() {
+    if (!msalInstance || !graphAccount) throw new Error('Microsoft no conectado');
+    try {
+      const result = await msalInstance.acquireTokenSilent({ scopes: graphScopes, account: graphAccount });
+      return result.accessToken;
+    } catch {
+      const result = await msalInstance.acquireTokenPopup({ scopes: graphScopes });
+      return result.accessToken;
+    }
+  }
+
+  async function graphFetch(url, options = {}) {
+    const token = await getToken();
+    const res = await fetch(`https://graph.microsoft.com/v1.0${url}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(options.headers || {})
+      }
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`${res.status} ${res.statusText}: ${body}`);
+    }
+    return res;
+  }
+
+  function graphPath(path) {
+    return `/me/drive/root:/${path}`;
+  }
+
+  async function readJsonFile(path, fallback) {
+    try {
+      const res = await graphFetch(`${graphPath(path)}:/content`);
+      return await res.json();
+    } catch (err) {
+      if (String(err.message).startsWith('404')) return fallback;
+      throw err;
+    }
+  }
+
+  async function writeJsonFile(path, data) {
+    await graphFetch(`${graphPath(path)}:/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data, null, 2)
+    });
+  }
+
+  async function ensureFolder(path) {
+    const parts = path.split('/').filter(Boolean);
+    let current = '';
+    for (const part of parts) {
+      const parent = current;
+      current = current ? `${current}/${part}` : part;
+      try {
+        await graphFetch(`${graphPath(current)}:`);
+      } catch (err) {
+        if (!String(err.message).startsWith('404')) throw err;
+        await graphFetch(parent ? `${graphPath(parent)}:/children` : '/me/drive/root/children', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: part, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' })
+        });
+      }
+    }
+  }
+
+  async function cargarUnidadesDesdeExcel() {
+    const rangeUrl = `${graphPath(`${oneDriveBase}/BBDD_Incidencias.xlsx`)}:/workbook/worksheets('Hoja1')/range(address='A1:H200')`;
+    const res = await graphFetch(rangeUrl);
+    const data = await res.json();
+    const rows = data.values || [];
+    const loaded = rows.slice(1)
+      .map(r => ({ code: String(r[0] || '').trim(), tenant: String(r[7] || '').trim() }))
+      .filter(u => u.code);
+    if (loaded.length) {
+      unidadesDB = loaded;
+      reconstruirUnidades();
+      renderDatalists();
+    }
+  }
+
+  function reconstruirUnidades() {
+    Object.keys(unidadesPorCodigo).forEach(k => delete unidadesPorCodigo[k]);
+    unidadesDB.forEach(u => {
+      if (!unidadesPorCodigo[u.code]) unidadesPorCodigo[u.code] = [];
+      unidadesPorCodigo[u.code].push(u.tenant || '');
+    });
+  }
+
+  function renderDatalists() {
+    const dlUnits = document.getElementById('dl-unidades');
+    const dlTenants = document.getElementById('dl-arrendatarios');
+    if (!dlUnits || !dlTenants) return;
+    dlUnits.innerHTML = unidadesDB.map(u => `<option value="${escapeAttr(u.code)}" label="${escapeAttr(u.tenant || '')}"></option>`).join('');
+    const seen = new Set();
+    dlTenants.innerHTML = unidadesDB
+      .map(u => u.tenant || '')
+      .filter(t => t && !seen.has(t) && seen.add(t))
+      .map(t => `<option value="${escapeAttr(t)}"></option>`)
+      .join('');
+  }
+
+  async function sincronizarOneDrive() {
+    if (!graphAccount) return;
+    try {
+      setSyncStatus('Sincronizando OneDrive...');
+      await ensureFolder(oneDriveBase);
+      await ensureFolder(fotosBasePath);
+      await cargarUnidadesDesdeExcel();
+      incidenciasCloud = await readJsonFile(incidenciasJsonPath, []);
+      if (!Array.isArray(incidenciasCloud)) incidenciasCloud = [];
+      renderIncidenciasCloud();
+      await writeJsonFile(incidenciasJsonPath, incidenciasCloud);
+      setSyncStatus(`OneDrive conectado · ${incidenciasCloud.length} incidencias`);
+    } catch (err) {
+      console.error(err);
+      setSyncStatus('Error sincronizando OneDrive');
+      alert('No se pudo sincronizar con OneDrive. Revisa que exista Apps/ControlIncidencias/BBDD_Incidencias.xlsx.');
+    }
+  }
+
+  function actualizarFotosSeleccionadas() {
+    const input = document.getElementById('nueva-fotos');
+    const label = document.getElementById('nueva-fotos-label');
+    const count = input?.files?.length || 0;
+    if (label) label.textContent = count ? `${count} archivo(s) seleccionado(s)` : 'Se guardarán en OneDrive por unidad e incidencia';
+  }
+
+  function nextIncidenciaId() {
+    const year = new Date().getFullYear();
+    const nums = incidenciasCloud
+      .map(i => String(i.id || '').match(new RegExp(`^INC-${year}-(\\d{4})$`)))
+      .filter(Boolean)
+      .map(m => Number(m[1]));
+    const next = (nums.length ? Math.max(...nums) : 0) + 1;
+    return `INC-${year}-${String(next).padStart(4, '0')}`;
+  }
+
+  function safePathSegment(value) {
+    return String(value || 'SIN_UNIDAD').trim().replace(/[\\/:*?"<>|#%{}~&]/g, '_') || 'SIN_UNIDAD';
+  }
+
+  async function uploadIncidentFiles(incidencia) {
+    const input = document.getElementById('nueva-fotos');
+    const files = Array.from(input?.files || []);
+    if (!files.length || !graphAccount) return [];
+    const unitFolder = safePathSegment(incidencia.unidad);
+    const folder = `${fotosBasePath}/${unitFolder}/${incidencia.id}`;
+    await ensureFolder(folder);
+    const uploaded = [];
+    for (const [index, file] of files.entries()) {
+      const name = `${String(index + 1).padStart(2, '0')}-${safePathSegment(file.name)}`;
+      const path = `${folder}/${name}`;
+      await graphFetch(`${graphPath(path)}:/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      uploaded.push(path);
+    }
+    return uploaded;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/`/g, '&#96;');
+  }
+
+  function renderIncidenciasCloud() {
+    document.querySelectorAll('.incidencia-card[data-source="onedrive"]').forEach(el => el.remove());
+    const lista = document.getElementById('lista-incidencias');
+    [...incidenciasCloud].reverse().forEach(inc => lista.insertBefore(crearCardIncidencia(inc), lista.firstChild));
+    actualizarStats();
+    filtrar();
+  }
+
+  function crearCardIncidencia(inc) {
+    const td = tipoData[inc.tipo] || { emoji:'📦', cls:'otro' };
+    const pagoLabel = { propietario:'Propietario', inquilino:'Inquilino', seguro:'Seguro' }[inc.pago] || 'Propietario';
+    const pagoCls = { propietario:'propietario', inquilino:'inquilino-pay', seguro:'seguro' }[inc.pago] || 'propietario';
+    const fechaObj = inc.fecha ? new Date(inc.fecha) : new Date();
+    const fechaStr = fechaObj.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
+    const card = document.createElement('div');
+    card.className = 'incidencia-card';
+    card.dataset.estado = inc.estado || 'abierta';
+    card.dataset.tipo = td.cls;
+    card.dataset.source = 'onedrive';
+    card.dataset.id = inc.id || '';
+    card.onclick = function(){ toggleDetalle(this); };
+    card.innerHTML = `
+      <div class="inc-header">
+        <div class="unidad-line">
+          <span class="unidad-code">${escapeHtml(inc.unidad || '—')}</span>
+          <span class="unidad-tenant">${escapeHtml(inc.arrendatario || 'Sin asignar')}</span>
+          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
+        </div>
+        <div class="unidad-edit-form" onclick="event.stopPropagation()">
+          <input type="text" class="code-input" list="dl-unidades" value="${escapeAttr(inc.unidad || '')}" oninput="autoFillUnidad(this)">
+          <input type="text" class="tenant-input" list="dl-arrendatarios" value="${escapeAttr(inc.arrendatario || '')}">
+          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
+        </div>
+        <div class="inc-header-row">
+          <div class="tipo-icon tipo-${td.cls}">${td.emoji}</div>
+          <div class="inc-main">
+            <div class="inc-title">
+              <span class="titulo-texto">${escapeHtml(inc.titulo || 'Sin título')}</span>
+              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
+            </div>
+            <div class="titulo-edit-form" onclick="event.stopPropagation()">
+              <input type="text" value="${escapeAttr(inc.titulo || '')}">
+              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
+            </div>
+            <div class="inc-meta">
+              <div class="meta-row">
+                <span class="meta-fecha">Abierta ${fechaStr}</span>
+                <span class="sep">·</span>
+                <span class="badge ${pagoCls} pago-badge">${pagoLabel}</span>
+              </div>
+              <div class="meta-row"><span class="meta-reparador">${escapeHtml(inc.reparador || 'Sin asignar')}</span></div>
+              <div class="meta-row">
+                <span>📎 ${(inc.fotos || []).length} archivo(s)</span>
+                <span class="sep">·</span>
+                <span class="badge abierta estado-badge">● Abierta</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    return card;
+  }
+
   const unidadesPorCodigo = unidadesDB.reduce((acc, u) => {
     if (!acc[u.code]) acc[u.code] = [];
     acc[u.code].push(u.tenant || '');
@@ -1917,89 +2222,68 @@
     document.getElementById('lightbox').classList.remove('visible');
   }
 
-  function crearIncidencia() {
+  async function crearIncidencia() {
     const titulo = document.getElementById('nueva-titulo').value.trim();
     if (!titulo) { alert('Escribe un título.'); return; }
 
-    const unidadCode   = document.getElementById('nueva-unidad-code').value.trim() || '—';
+    const unidadCode = document.getElementById('nueva-unidad-code').value.trim() || '—';
     const unidadTenant = document.getElementById('nueva-unidad-tenant').value.trim() || 'Sin asignar';
-
-    const tipoBtn  = document.querySelector('.tipo-pick-btn.selected');
+    const tipoBtn = document.querySelector('.tipo-pick-btn.selected');
     const tipoText = tipoBtn.querySelector('span:last-child').textContent;
-    const td       = tipoData[tipoText] || { emoji:'📦', cls:'otro' };
-    const fecha    = document.getElementById('nueva-fecha').value;
-    const d        = new Date(fecha);
-    const fechaStr = d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
-    const pago     = document.getElementById('nueva-pago').value;
-    const rep      = document.getElementById('nueva-reparador').value || 'Sin asignar';
-    const pagoLabel = { propietario:'Propietario', inquilino:'Inquilino', seguro:'Seguro' }[pago];
-    const pagoCls   = { propietario:'propietario', inquilino:'inquilino-pay', seguro:'seguro' }[pago];
+    const fecha = document.getElementById('nueva-fecha').value || new Date().toISOString().slice(0, 10);
+    const incidencia = {
+      id: graphAccount ? nextIncidenciaId() : `LOCAL-${Date.now()}`,
+      unidad: unidadCode,
+      arrendatario: unidadTenant,
+      tipo: tipoText,
+      estado: 'abierta',
+      titulo,
+      descripcion: document.getElementById('nueva-desc').value.trim(),
+      fecha,
+      pago: document.getElementById('nueva-pago').value,
+      reparador: document.getElementById('nueva-reparador').value.trim() || 'Sin asignar',
+      telefono: document.getElementById('nueva-tel').value.trim(),
+      fotos: [],
+      seguimiento: [],
+      actualizadoEn: new Date().toISOString()
+    };
 
-    const card = document.createElement('div');
-    card.className = 'incidencia-card';
-    card.dataset.estado = 'abierta';
-    card.dataset.tipo   = td.cls;
-    card.onclick = function(){ toggleDetalle(this); };
-    card.innerHTML = `
-      <div class="inc-header">
-        <div class="unidad-line">
-          <span class="unidad-code">${unidadCode}</span>
-          <span class="unidad-tenant">${unidadTenant}</span>
-          <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleUnidadEdit(this)" title="Editar unidad / arrendatario">✎</button>
-        </div>
-        <div class="unidad-edit-form" onclick="event.stopPropagation()">
-          <input type="text" class="code-input" list="dl-unidades" value="${unidadCode}" oninput="autoFillUnidad(this)">
-          <input type="text" class="tenant-input" list="dl-arrendatarios" value="${unidadTenant}">
-          <button class="btn-save-mini" onclick="guardarUnidad(event, this)">Guardar</button>
-        </div>
-        <div class="inc-header-row">
-          <div class="tipo-icon tipo-${td.cls}">${td.emoji}</div>
-          <div class="inc-main">
-            <div class="inc-title">
-              <span class="titulo-texto">${titulo}</span>
-              <button class="unidad-edit-btn" onclick="event.stopPropagation(); toggleTituloEdit(this)" title="Editar título">✎</button>
-            </div>
-            <div class="titulo-edit-form" onclick="event.stopPropagation()">
-              <input type="text" value="${titulo}">
-              <button class="btn-save-mini" onclick="guardarTitulo(event, this)">Guardar</button>
-            </div>
-            <div class="inc-meta">
-              <div class="meta-row">
-                <span class="meta-fecha">Abierta ${fechaStr}</span>
-                <span class="sep">·</span>
-                <span class="badge ${pagoCls} pago-badge">${pagoLabel}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-reparador">${rep}</span>
-              </div>
-              <div class="meta-row">
-                <span>🕐 0 días</span>
-                <span class="sep">·</span>
-                <span class="badge abierta estado-badge">● Abierta</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-
-    const lista = document.getElementById('lista-incidencias');
-    lista.insertBefore(card, lista.firstChild);
+    try {
+      if (graphAccount) {
+        setSyncStatus('Guardando incidencia en OneDrive...');
+        incidencia.fotos = await uploadIncidentFiles(incidencia);
+        incidenciasCloud.push(incidencia);
+        await writeJsonFile(incidenciasJsonPath, incidenciasCloud);
+        renderIncidenciasCloud();
+        setSyncStatus(`Guardado en OneDrive · ${incidenciasCloud.length} incidencias`);
+      } else {
+        document.getElementById('lista-incidencias').insertBefore(crearCardIncidencia(incidencia), document.getElementById('lista-incidencias').firstChild);
+        alert('Incidencia creada solo en esta sesión. Conecta Microsoft para guardarla en OneDrive.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo guardar en OneDrive. La incidencia no se ha subido.');
+      return;
+    }
 
     actualizarStats();
     filtrar();
     cerrarModal();
 
-    // Reset form
     document.getElementById('nueva-titulo').value = '';
     document.getElementById('nueva-desc').value = '';
     document.getElementById('nueva-reparador').value = '';
     document.getElementById('nueva-tel').value = '';
     document.getElementById('nueva-unidad-code').value = '';
     document.getElementById('nueva-unidad-tenant').value = '';
+    document.getElementById('nueva-fotos').value = '';
+    actualizarFotosSeleccionadas();
     document.querySelectorAll('.tipo-pick-btn').forEach((b,i) => b.classList.toggle('selected', i===0));
   }
 
-  // Seguimiento inline
+  initMicrosoft();
+
+  // Seguimiento inline  // Seguimiento inline
   function toggleSegForm(e, btn) {
     e.stopPropagation();
     const form = btn.nextElementSibling;
