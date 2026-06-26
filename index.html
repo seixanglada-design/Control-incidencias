@@ -1629,6 +1629,7 @@
   let msalInstance = null;
   let graphAccount = null;
   let incidenciasCloud = [];
+  let msalLoadPromise = null;
 
   function setSyncStatus(texto) {
     const el = document.getElementById('sync-status');
@@ -1639,8 +1640,41 @@
     return typeof window.msal !== 'undefined';
   }
 
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  async function ensureMicrosoftLogin() {
+    if (graphReady()) return true;
+    if (!msalLoadPromise) {
+      msalLoadPromise = (async () => {
+        setSyncStatus('Cargando Microsoft login...');
+        const sources = [
+          'https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js',
+          'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js'
+        ];
+        for (const src of sources) {
+          try {
+            await loadScript(src);
+            if (graphReady()) return true;
+          } catch (err) {
+            console.warn('No se pudo cargar MSAL desde', src, err);
+          }
+        }
+        return false;
+      })();
+    }
+    return msalLoadPromise;
+  }
+
   async function initMicrosoft() {
-    if (!graphReady()) {
+    if (!(await ensureMicrosoftLogin())) {
       setSyncStatus('Microsoft login no cargado');
       return;
     }
@@ -1657,7 +1691,7 @@
   }
 
   async function loginMicrosoft() {
-    if (!graphReady()) {
+    if (!(await ensureMicrosoftLogin())) {
       alert('No se pudo cargar Microsoft login. Revisa la conexión y vuelve a intentarlo.');
       return;
     }
