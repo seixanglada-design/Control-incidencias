@@ -134,6 +134,19 @@
     cursor: pointer; transition: border-color .15s;
   }
   .filter-select:focus { border-color: var(--indigo); }
+  .estado-filter {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .estado-filter-btn {
+    border: 1px solid var(--slate-200); background: white; color: var(--slate-600);
+    padding: 8px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    font-family: inherit; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .estado-filter-btn.active { color: var(--slate-950); border-color: var(--indigo); background: var(--indigo-bg); }
+  .estado-filter-btn[data-estado="abierta"].active { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+  .estado-filter-btn[data-estado="en-curso"].active { border-color: var(--amber); background: var(--amber-bg); color: var(--amber); }
+  .estado-filter-btn[data-estado="presupuesto"].active { border-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
+  .estado-filter-btn[data-estado="resuelta"].active { border-color: var(--green); background: var(--green-bg); color: var(--green); }
   .btn-nueva {
     background: var(--indigo); color: white; border: none;
     padding: 8px 18px; border-radius: 6px; font-family: inherit;
@@ -627,6 +640,13 @@
       flex: 1 1 145px;
       min-width: 0;
     }
+    .estado-filter {
+      width: 100%;
+    }
+    .estado-filter-btn {
+      flex: 1 1 135px;
+      padding: 8px 9px;
+    }
     .search-input {
       font-size: 13px;
       padding: 10px 12px;
@@ -698,14 +718,12 @@
   <!-- TOOLBAR -->
   <div class="toolbar">
     <div class="toolbar-left">
-      <select class="filter-select" onchange="filtrar()">
-        <option value="todas">Todos los estados</option>
-        <option value="abierta">Abiertas</option>
-        <option value="en-curso">En curso</option>
-        <option value="presupuesto">Pdte. presupuesto</option>
-        <option value="resuelta">Resueltas</option>
-        <option value="descartada">Descartadas</option>
-      </select>
+      <div class="estado-filter" aria-label="Filtrar por estado">
+        <button type="button" class="estado-filter-btn active" data-estado="abierta" onclick="toggleEstadoFiltro(this)">Abiertas</button>
+        <button type="button" class="estado-filter-btn active" data-estado="en-curso" onclick="toggleEstadoFiltro(this)">En curso</button>
+        <button type="button" class="estado-filter-btn active" data-estado="presupuesto" onclick="toggleEstadoFiltro(this)">Pdte. presupuesto</button>
+        <button type="button" class="estado-filter-btn" data-estado="resuelta" onclick="toggleEstadoFiltro(this)">Resueltas</button>
+      </div>
       <select class="filter-select" onchange="filtrar()" id="filtro-tipo">
         <option value="todas">Todos los tipos</option>
         <option value="caldera">Caldera</option>
@@ -1982,6 +2000,27 @@
     return uploaded;
   }
 
+  async function uploadMainEvidenceFiles(card, files) {
+    const id = card?.dataset?.id;
+    const inc = incidenciasCloud.find(item => item.id === id);
+    if (!files.length || !graphAccount || !inc) return [];
+    const unitFolder = safePathSegment(inc.unidad);
+    const folder = `${fotosBasePath}/${unitFolder}/${inc.id}`;
+    await ensureFolder(folder);
+    const uploaded = [];
+    for (const [index, file] of files.entries()) {
+      const name = `${Date.now()}-${String(index + 1).padStart(2, '0')}-${safePathSegment(file.name)}`;
+      const path = `${folder}/${name}`;
+      await graphFetch(`${graphPath(path)}:/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      uploaded.push(path);
+    }
+    return uploaded;
+  }
+
   async function uploadSeguimientoFiles(card, files, segId) {
     const id = card?.dataset?.id;
     const inc = incidenciasCloud.find(item => item.id === id);
@@ -2016,7 +2055,7 @@
     const fecha = seg.fecha ? new Date(seg.fecha).toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }) : '';
     const adjuntos = seg.adjuntos || [];
     const fotosThumbs = adjuntos.map((path, i) =>
-      `<div class="tl-foto-thumb" title="${escapeAttr(path)}" data-attachment="${escapeAttr(path)}">📎<small>${i + 1}</small></div>`
+      `<div class="tl-foto-thumb" title="${escapeAttr(path)}" data-attachment="${escapeAttr(path)}">📎<small>${i + 1}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>`
     ).join('');
     return `
       <div class="tl-item ${cfg.cls}" data-seg-id="${escapeAttr(seg.id || '')}">
@@ -2132,7 +2171,7 @@
     const fotos = inc.fotos || [];
     const seguimientoItems = (inc.seguimiento || []).map(seg => renderSeguimientoItem(seg)).join('');
     const fotosSeguimiento = fotos.length ? `
-      <div class="tl-item tl-foto">
+      <div class="tl-item tl-foto tl-main-evidence" data-main-photos="1">
         <div class="tl-dot-wrap"><div class="tl-dot">📎</div></div>
         <div class="tl-body">
           <div class="tl-meta-row">
@@ -2141,7 +2180,7 @@
           </div>
           <div class="tl-text-body">${fotos.length} archivo(s) subido(s) a OneDrive.</div>
           <div class="tl-fotos">
-            ${fotos.map((f, i) => `<div class="tl-foto-thumb" title="${escapeAttr(f)}" data-attachment="${escapeAttr(f)}">📎<small>${i + 1}</small></div>`).join('')}
+            ${fotos.map((f, i) => `<div class="tl-foto-thumb" title="${escapeAttr(f)}" data-attachment="${escapeAttr(f)}">📎<small>${i + 1}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button></div>`).join('')}
             <button type="button" class="tl-foto-add" onclick="event.stopPropagation(); addFotoToItem(this)" title="Añadir foto">+</button>
           </div>
         </div>
@@ -2185,7 +2224,7 @@
               </div>
               <div class="meta-row"><span class="meta-reparador">${escapeHtml(inc.reparador || 'Sin asignar')}</span></div>
               <div class="meta-row">
-                <span>📎 ${fotos.length} archivo(s)</span>
+                <span class="meta-files">📎 ${fotos.length} archivo(s)</span>
                 <span class="sep">·</span>
                 <span class="badge ${estado} estado-badge">${estadoLabels[estado] || estado}</span>
               </div>
@@ -2346,11 +2385,11 @@
     return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   }
   function filtrar() {
-    const estado = document.querySelectorAll('.filter-select')[0].value;
+    const estadosActivos = Array.from(document.querySelectorAll('.estado-filter-btn.active')).map(btn => btn.dataset.estado);
     const tipo   = document.getElementById('filtro-tipo').value;
     const q = normalizar(document.getElementById('buscador').value);
     document.querySelectorAll('.incidencia-card').forEach(c => {
-      const eOk = estado === 'todas' || c.dataset.estado === estado;
+      const eOk = estadosActivos.includes(c.dataset.estado);
       const tOk = tipo   === 'todas' || c.dataset.tipo   === tipo;
       let qOk = true;
       if (q) {
@@ -2360,6 +2399,11 @@
       }
       c.style.display = eOk && tOk && qOk ? '' : 'none';
     });
+  }
+
+  function toggleEstadoFiltro(btn) {
+    btn.classList.toggle('active');
+    filtrar();
   }
 
   // Tipo picker modal
@@ -2557,6 +2601,18 @@
   }
 
   // ── Añadir / borrar fotos en una anotación ya existente ──
+  function actualizarContadoresFotos(item) {
+    if (!item) return;
+    const card = item.closest('.incidencia-card');
+    const total = item.querySelectorAll('.tl-foto-thumb[data-attachment]').length;
+    if (item.dataset.mainPhotos === '1') {
+      const text = item.querySelector('.tl-text-body');
+      if (text) text.textContent = `${total} archivo(s) subido(s) a OneDrive.`;
+      const meta = card?.querySelector('.meta-files');
+      if (meta) meta.textContent = `📎 ${total} archivo(s)`;
+    }
+  }
+
   function addFotoToItem(btn) {
     const fotosBox = btn.closest('.tl-fotos');
     const input = document.createElement('input');
@@ -2571,7 +2627,23 @@
       const item = btn.closest('.tl-item');
       const card = btn.closest('.incidencia-card');
       let adjuntos = [];
-      if (card?.dataset.source === 'onedrive') {
+      if (card?.dataset.source === 'onedrive' && item?.dataset.mainPhotos === '1') {
+        try {
+          adjuntos = await uploadMainEvidenceFiles(card, files);
+          const ok = await persistirIncidencia(card, inc => {
+            inc.fotos = [...(inc.fotos || []), ...adjuntos];
+          }, 'Adjuntos guardados');
+          if (!ok) {
+            input.remove();
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+          alert('No se pudieron guardar los adjuntos en OneDrive.');
+          input.remove();
+          return;
+        }
+      } else if (card?.dataset.source === 'onedrive') {
         const segId = item?.dataset.segId || `SEG-${Date.now()}`;
         try {
           adjuntos = await uploadSeguimientoFiles(card, files, segId);
@@ -2606,14 +2678,16 @@
       } else {
         adjuntos = files.map((_, i) => `Adjunto local ${i + 1}`);
       }
+      const baseIndex = fotosBox.querySelectorAll('.tl-foto-thumb[data-attachment]').length;
       adjuntos.forEach((attachment, index) => {
         const thumb = document.createElement('div');
         thumb.className = 'tl-foto-thumb';
         thumb.title = attachment || `${count} archivo(s) seleccionado(s)`;
         thumb.dataset.attachment = attachment || '';
-        thumb.innerHTML = `📎<small>${index + 1}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button>`;
+        thumb.innerHTML = `📎<small>${baseIndex + index + 1}</small><button class="tl-foto-del" onclick="event.stopPropagation(); borrarFoto(this)">×</button>`;
         fotosBox.insertBefore(thumb, btn);
       });
+      actualizarContadoresFotos(item);
       input.remove();
       asegurarInteraccionesFicha();
     };
@@ -2627,7 +2701,9 @@
     const attachment = thumb?.dataset?.attachment;
     if (card?.dataset.source === 'onedrive' && attachment) {
       const ok = await persistirIncidencia(card, inc => {
-        if (item?.dataset.segId) {
+        if (item?.dataset.mainPhotos === '1') {
+          inc.fotos = (inc.fotos || []).filter(path => path !== attachment);
+        } else if (item?.dataset.segId) {
           const seg = (inc.seguimiento || []).find(s => s.id === item.dataset.segId);
           if (seg) seg.adjuntos = (seg.adjuntos || []).filter(path => path !== attachment);
         } else {
@@ -2635,8 +2711,16 @@
         }
       }, 'Adjunto eliminado');
       if (!ok) return;
+      if (graphAccount) {
+        try {
+          await graphFetch(`${graphPath(attachment)}:`, { method: 'DELETE' });
+        } catch (err) {
+          if (!String(err.message).startsWith('404')) console.warn('No se pudo borrar el archivo de OneDrive', err);
+        }
+      }
     }
     thumb.remove();
+    actualizarContadoresFotos(item);
   }
 
   // ── Título breve editable ──
